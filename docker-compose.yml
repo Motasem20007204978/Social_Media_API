@@ -1,0 +1,136 @@
+version: "3"
+   
+services:
+  database: # any name
+    image: postgres:alpine
+    container_name: pg_db
+    restart: always
+    ports:
+      - '5432:5432'
+    volumes:
+      - db:/data/postgresql
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - DB_NAME={DB_NAME}
+      - DB_USER='{DB_USER}'
+      - DB_PASSWORD={DB_PASSWORD}
+    networks:
+      - db
+
+  web: # any name
+    build: 
+      context: backend
+      dockerfile: dockerfile
+    container_name: backend
+    restart: always
+    command: >
+     sh -c "python manage.py makemigrations &&
+            python manage.py wait_for_db &&
+            python manage.py migrate &&
+            python manage.py runserver 0.0.0.0:5000"
+    volumes:
+      - .:/data/backend #get the real-time updates that we makes it to the project into the image
+    ports:
+      - "5000:5000"
+    image: web:django # run the image with django tag
+    env_file:
+      - ./.env
+    depends_on:
+      - database
+    links:
+      - database:db
+    networks:
+      - db
+      - net
+
+
+  redis: # Remote Dictionary Server.
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - redis:/data/redis
+    ports:
+      - 6379:6379
+    networks:
+      - net
+
+
+  celery:
+    container_name: celery
+    image: celery:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always # restart container automatically if it is stopped manually or fails
+    command: celery -A social_media_project worker -l INFO # get information in terminal
+    depends_on:
+      - web
+      - redis
+    env_file:
+      - ./.env
+    networks:
+      - net
+      - db 
+    
+  celery-beat: 
+    container_name: celery_beat
+    image: celery:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    command: celery -A social_media_project beat -l INFO
+    env_file:
+      - ./.env
+    depends_on:
+      - celery
+    links:
+      - database:db
+    networks:
+      - net
+      - db 
+
+  flower:
+    image: mher/flower
+    container_name: flower
+    command: celery flower --persisten=True 
+    # persist our data in flower so that it didn’t go away on every restart of container 
+    ports:
+      - 5555:5555
+    env_file:
+      - ./.env
+    depends_on:
+      - celery
+    links:
+      - database:db 
+    networks:
+      - net
+      - flower_prome
+    
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - 9090:9090
+    volumes:
+      - ./monitor.yml:/etc/prometheus/prometheus.yml 
+    links:
+      - flower:flower 
+    depends_on:
+      - flower
+    networks:
+      - flower_prome
+
+
+
+networks:
+  db: 
+  net:
+  flower_prome:
+
+
+volumes:
+  db: 
+  redis:
+  web:
