@@ -44,6 +44,10 @@ app.conf.beat_schedule = {
         "task": "delete_expired_tokens",
         "schedule": timedelta(days=2),
     },
+    "clear-read-notifications": {
+        "task": "clear_read_notifications",
+        "schedule": timedelta(days=2),
+    },
 }
 
 # celery beat to schedule tasks with three types:

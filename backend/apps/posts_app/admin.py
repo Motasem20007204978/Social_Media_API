@@ -7,7 +7,7 @@ from django.contrib.admin.filters import SimpleListFilter
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ["id", "user", "created_at"]
+    list_display = ["id", "user", "created"]
     search_fields = ["user"]
     list_filter = ["user"]
     list_display_links = ["user"]

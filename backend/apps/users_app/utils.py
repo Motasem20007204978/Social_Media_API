@@ -21,3 +21,4 @@ def get_user_from_uuid(uuid):
     uid = urlsafe_base64_decode(uuid).decode()
     user = get_object_or_404(User, id=uid)
     return user
+

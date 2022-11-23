@@ -65,7 +65,8 @@ class CommentSerializer(serializers.ModelSerializer):
             "text",
             "likes",
             "count_replies",
-            "created_at",
+            "created",
+            "modified",
         )
         read_only_fields = ("id", "user", "post", "parent")
 
@@ -114,7 +115,8 @@ class PostFeedSerializer(WritableNestedModelSerializer):
             "id",
             "user",
             "text",
-            "created_at",
+            "created",
+            "modified",
             "likes",
             "count_comments",
             "attachments",

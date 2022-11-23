@@ -1,9 +1,8 @@
-from uuid import uuid4
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from .validators import is_real_email, username_validator, name_validator
 from django.utils.translation import gettext_lazy as _
-from posts_app.models import PathAndRename
+from posts_app.path_generation import PathAndRename, uuid4
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
@@ -24,7 +23,7 @@ class User(AbstractUser):
         ("twitter", "twitter"),
         ("github", "github"),
     ]
-    id = models.UUIDField(max_length=30, primary_key=True, default=uuid4)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     provider = models.CharField(
         max_length=10, choices=PROVIDERS, default=PROVIDERS[0][0]
     )
@@ -191,13 +190,14 @@ class Profile(models.Model):
         blank=True,
         null=True,
         verbose_name="profile picture",
+        default='default-image.jpg',
     )
     birth_date = models.DateField(null=True, blank=True)
     CHOICES = [("U", "-----"), ("M", "male"), ("F", "female")]
     gender = models.CharField(
         max_length=1,
         choices=CHOICES,
-        default=CHOICES[0][0],
+        default='U',
     )
 
     bio = models.TextField(

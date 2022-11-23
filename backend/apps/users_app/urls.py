@@ -26,7 +26,7 @@ urlpatterns = [
     ),
     path("password/change/", ChangePasswordView.as_view(), name="change-password"),
     path("logout/", TokenBlacklistView.as_view(), name="logout"),
-    path("<str:username>/", ProfileView.as_view(), name="user-info"),
+    path("<str:username>", ProfileView.as_view(), name="user-info"),
     path("following/<str:username>/", FollowView.as_view(), name="following"),
     path("blocking/<str:username>/", BlockView.as_view(), name="blocking"),
 ]

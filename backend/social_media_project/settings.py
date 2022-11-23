@@ -56,12 +56,14 @@ THIRD_PARTY_APPS = [
     "drf_spectacular_sidecar",  # required for Django collectstatic discovery
     "django_extensions",
     "rest_framework_simplejwt.token_blacklist",
+    'drf_queryfields',
 ]
 
 LOCAL_APPS = [
     "users_app.apps.UsersAppConfig",
     "posts_app.apps.PostsAppConfig",
     "chats_app.apps.ChatsAppConfig",
+    "notifications_app.apps.NotificationsAppConfig",
 ]
 
 INSTALLED_APPS = LOCAL_APPS + DEFAULT_APPS + THIRD_PARTY_APPS
@@ -109,14 +111,14 @@ WSGI_APPLICATION = "social_media_project.wsgi.application"
 
 DATABASES = {
     "default": {
-        # "ENGINE": "django.db.backends.sqlite3",
-        # "NAME": BASE_DIR / "db.sqlite3",
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST"),
-        "PORT": 5432,
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+        # "ENGINE": "django.db.backends.postgresql",
+        # "NAME": config("DB_NAME"),
+        # "USER": config("DB_USER"),
+        # "PASSWORD": config("DB_PASSWORD"),
+        # "HOST": config("DB_HOST"),
+        # "PORT": 5432,
     }
 }
 

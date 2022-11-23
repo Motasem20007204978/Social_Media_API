@@ -17,7 +17,7 @@ def add(x, y):
 
 @shared_task(name="delete_inactivated_users")
 def delete_inactivated_users():
-    call_command(command_name="delete_inactivated_accounts")
+    call_command(command_name="deleteinactivatedaccounts")
     return True
 
 

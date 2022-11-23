@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
 from drf_base64.fields import Base64ImageField
 from drf_writable_nested.serializers import WritableNestedModelSerializer
+from drf_queryfields.mixins import QueryFieldsMixin
 
 
 def repr_data(value):
@@ -47,7 +48,7 @@ class NestedProfileSerializer(serializers.ModelSerializer):
         exclude = ("user",)
 
 
-class ProfileSerializer(WritableNestedModelSerializer):
+class ProfileSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
 
     followers = RelatedFollowers(many=True, read_only=True)
     followings = RelatedFollowings(many=True, read_only=True)
@@ -85,12 +86,13 @@ class ProfileSerializer(WritableNestedModelSerializer):
             "last_name": {"write_only": True, "required": False},
         }
 
-    def to_representation(self, instance):
-        represntation = super().to_representation(instance)
-        p_representation = represntation.pop("profile")
-        for k, v in p_representation.items():
-            represntation[k] = v
-        return represntation
+    # def to_representation(self, instance):
+    #     represntation = super().to_representation(instance)
+    #     if represntation.get('profile', ''):
+    #         p_representation = represntation.pop("profile")
+    #         for k, v in p_representation.items():
+    #             represntation[k] = v
+    #     return represntation
 
 
 class PasswordField(serializers.CharField):
@@ -102,7 +104,7 @@ class PasswordField(serializers.CharField):
         super().__init__(**kwargs)
 
 
-class RegisterSerializer(serializers.ModelSerializer):
+class RegisterSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     password = PasswordField()
 
@@ -245,7 +247,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         return data
 
 
-class FollowSerializer(serializers.ModelSerializer):
+class FollowSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = ("from_user", "to_user")
