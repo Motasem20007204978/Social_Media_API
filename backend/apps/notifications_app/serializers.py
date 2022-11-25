@@ -12,9 +12,9 @@ class NotificationSerialzier(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = '__all__'
-        read_only_fields = ('seen', 'data', 'created', 'modified')
-    
+        fields = "__all__"
+        read_only_fields = ("seen", "data", "created", "modified")
+
     def update(self, instance, validated_data):
         mark_as_read.delay(instance)
-        return instance     
+        return instance

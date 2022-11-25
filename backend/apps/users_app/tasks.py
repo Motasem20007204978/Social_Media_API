@@ -7,6 +7,7 @@ from .utils import activation_url
 from rest_framework.generics import get_object_or_404
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
+from notifications_app.tasks import create_notifications
 
 
 @shared_task
@@ -38,3 +39,17 @@ def send_activation(data):
     subject = "email activation link"
     message = f"checking email url is \n {url}"
     user.email_user(subject, message)
+
+
+@shared_task(name="create_following_notification")
+def notifying_follwing(follow_obj):
+    data = {
+        "sender": follow_obj.from_user,
+        "receiver": follow_obj.to_user,
+        "options": {
+            "message": f"user {follow_obj.from_user.full_name} started following you",
+            "follwer_id": follow_obj.from_user.id,
+        },
+    }
+    create_notifications.delay(**data)
+    return "notification creating..."

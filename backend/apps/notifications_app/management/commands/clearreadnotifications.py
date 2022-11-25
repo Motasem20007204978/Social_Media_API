@@ -8,6 +8,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         seen_notifs = Notification.objects.filter(
-            modified=timezone.now() - timezone.timedelta(days=1), seen=True,
+            modified=timezone.now() - timezone.timedelta(days=1),
+            seen=True,
         )  # Queryset to get seen notifications
         seen_notifs.delete()

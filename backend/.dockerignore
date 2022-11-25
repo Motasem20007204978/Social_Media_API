@@ -33,10 +33,10 @@ dockerfile
 **/migrations/**
 !**/migrations/__init__.py
 
-*/static/*
-*/media/*
+static/*
+media/*
 
-!*/media/.gitkeep
-!*/static/.gitkeep
+!media/.gitkeep
+!static/.gitkeep
 
 data

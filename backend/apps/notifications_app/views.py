@@ -7,20 +7,21 @@ from .models import Notification
 
 # Create your views here.
 
+
 class PublicView(GenericAPIView):
     serializer_class = NotificationSerialzier
     queryset = Notification.objects.all()
 
-class ListNotifications(PublicView, ListModelMixin):
-    http_method_names = ['get']
 
-    def filter_queryset(self, queryset): 
+class ListNotifications(PublicView, ListModelMixin):
+    def filter_queryset(self, queryset):
         queryset = queryset.filter(receiver=self.request.user)
         return request
-    ...
 
-class MarkNorificationRead(PublicView, UpdateModelMixin): 
-    http_method_names = ['update']
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+
+class MarkNotificationRead(PublicView, UpdateModelMixin):
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)

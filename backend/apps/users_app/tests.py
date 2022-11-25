@@ -15,7 +15,7 @@ d2s = sum(map(sq, d2))
 
 d = sum(map(ml, d1, d2))
 
-cos = 2 / (d1s**0.5 * d2s**0.5)
+cos = d / (d1s**0.5 * d2s**0.5)
 print(cos)
 
 

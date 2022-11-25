@@ -1,7 +1,7 @@
 from __future__ import print_function
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-PATH = __file__.removesuffix('google_auth.py')
+PATH = __file__.removesuffix("google_auth.py")
 
 SCOPES = [
     "openid",

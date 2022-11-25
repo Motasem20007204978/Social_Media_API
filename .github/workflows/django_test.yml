@@ -1,0 +1,6 @@
+uses: piotrpawlaczek/python-blacken@release/stable
+
+with:
+  path: './backend'
+  sanity-check: 'safe'
+  only-check: 'no'

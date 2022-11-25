@@ -192,7 +192,6 @@ from decouple import config
 
 
 class GoogleLoginSerializer(serializers.Serializer):
-
     def login(self, data):
         serializer = LoginSerializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -209,7 +208,7 @@ class GoogleLoginSerializer(serializers.Serializer):
         user = User.objects.filter(email=validated_data["email"])
         if user:
             return user[0]
-        
+
         data = {
             "provider": "google",
             "username": get_random_string(20),

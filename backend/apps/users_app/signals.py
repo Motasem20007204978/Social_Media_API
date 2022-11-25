@@ -1,12 +1,13 @@
 from django.db.models.signals import *
 from .models import User, Profile, Follow, Block
 from django.dispatch import receiver
+from .tasks import notifying_follwing
 
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        Profile.objects.acreate(user=instance)
 
 
 @receiver(pre_save, sender=Follow)
@@ -26,5 +27,11 @@ def unfollow(sender, instance, **kwargs):
             from_user=instance.from_user, to_user=instance.to_user
         )
         follow_rel.delete()
-    except:
+    except follow_rel.DoesNotExist:
         ...
+
+
+@receiver(post_save, sender=Follow)
+def ntify_followed_user(sender, created, instance, **kwargs):
+    if created:
+        notifying_follwing.delay(instance)

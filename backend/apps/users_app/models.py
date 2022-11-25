@@ -190,14 +190,14 @@ class Profile(models.Model):
         blank=True,
         null=True,
         verbose_name="profile picture",
-        default='default-image.jpg',
+        default="default-image.jpg",
     )
     birth_date = models.DateField(null=True, blank=True)
     CHOICES = [("U", "-----"), ("M", "male"), ("F", "female")]
     gender = models.CharField(
         max_length=1,
         choices=CHOICES,
-        default='U',
+        default="U",
     )
 
     bio = models.TextField(

@@ -7,6 +7,7 @@ from .path_generation import PathAndRename, uuid4
 
 User = settings.AUTH_USER_MODEL
 
+
 class TextualObject(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
