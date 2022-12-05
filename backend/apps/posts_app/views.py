@@ -22,6 +22,7 @@ from drf_spectacular.types import OpenApiTypes
 from django.utils.decorators import method_decorator
 from django.views.decorators.vary import vary_on_cookie, vary_on_headers
 from django.views.decorators.cache import cache_page
+from django.contrib.auth import get_user_model
 
 
 @extend_schema_view(
@@ -30,6 +31,7 @@ from django.views.decorators.cache import cache_page
         operation_id="list posts",
         parameters=[
             OpenApiParameter(name="username", description="list by username", type=str),
+            OpenApiParameter(name="fields", description="select fields to represent"),
         ],
     ),
     post=extend_schema(
@@ -56,20 +58,37 @@ class PostsView(ListCreateAPIView):
         home_posts = queryset.filter(user__in=self.followings_users)
         return home_posts
 
+    @property
+    def specific_user(self):
+        User = get_user_model()
+        username = self.request.GET.get("username", "")
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return None
+        return user
+
     def user_post_queryset(self, queryset):
-        return queryset.filter(user__username=self.request.GET.get("username"))
+        return queryset.filter(user=self.specific_user)
 
     def filter_queryset(self, queryset):
         posts = self.home_queryset(queryset)
-        if self.request.GET.get("username"):
+        if self.specific_user:
             posts = self.user_post_queryset(queryset)
         return posts
 
     @method_decorator(
-        cache_page(timeout=60 * 60 * 24, cache="default", key_prefix="get-posts"),
-        name="get posts",
+        decorator=cache_page(
+            timeout=60 * 60 * 24, cache="default", key_prefix="get-posts"
+        ),
+        name="get_posts",
     )
     def get(self, request, *args, **kwargs):
+        if self.specific_user:
+            if self.specific_user in request.user.blockings:
+                return Response(
+                    data={"invalid_access": "this user is blocked"}, status=404
+                )
         return super().get(request, *args, **kwargs)
 
 
@@ -77,6 +96,9 @@ class PostsView(ListCreateAPIView):
     get=extend_schema(
         description="get home posts or a user's posts",
         operation_id="get post by id",
+        parameters=[
+            OpenApiParameter(name="fields", description="select fields to represent")
+        ],
     ),
     patch=extend_schema(
         operation_id="Patch Post",

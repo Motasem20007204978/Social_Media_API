@@ -8,4 +8,5 @@ from .tasks import send_notification
 @receiver(signal=post_save, sender=Notification)
 def send_notification(sender, created, instance, **kwargs):
     if created:
-        send_notification.delay(instance)
+        # send_notification.delay(instance.id)
+        ...

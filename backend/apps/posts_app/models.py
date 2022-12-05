@@ -14,8 +14,8 @@ class TextualObject(TimeStampedModel):
     text = models.TextField(max_length=500)
 
     @cached_property
-    def likes(self):
-        return Like.objects.filter(object_id=self.id, content_type="post")
+    def count_likes(self):
+        return Like.objects.filter(object_id=self.id, content_type="post").count()
 
     class Meta:
         abstract = True

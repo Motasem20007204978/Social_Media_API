@@ -16,5 +16,5 @@ class NotificationSerialzier(serializers.ModelSerializer):
         read_only_fields = ("seen", "data", "created", "modified")
 
     def update(self, instance, validated_data):
-        mark_as_read.delay(instance)
+        mark_as_read.delay(instance.id)
         return instance

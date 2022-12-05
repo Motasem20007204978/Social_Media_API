@@ -22,14 +22,13 @@ services:
       context: backend
       dockerfile: dockerfile
     container_name: backend
-    restart: always
     command: >
      sh -c "python manage.py makemigrations &&
             python manage.py waitfordb &&
             python manage.py migrate &&
             python manage.py runserver 0.0.0.0:5000"
     volumes:
-      - .:/data/backend #get the real-time updates that we makes it to the project into the image
+      - ./backend:/social_media_project/ #get the real-time updates that we makes it to the project into the image
     ports:
       - "5000:5000"
     image: web:django # run the image with django tag
@@ -37,12 +36,14 @@ services:
       - ./.env
     depends_on:
       - database
+      - redis
     links:
       - database:db
+      - redis
     networks:
       - db
       - net
-
+      - monitoring
 
   redis: # Remote Dictionary Server.
     image: redis:alpine
@@ -54,17 +55,18 @@ services:
     networks:
       - net
 
-
   celery:
     container_name: celery
-    image: celery:latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: web:django
     restart: always # restart container automatically if it is stopped manually or fails
     command: celery -A social_media_project worker -l INFO # get information in terminal
+    links:
+      - database
+      - redis
+    volumes:
+      - ./backend:/social_media_project/
     depends_on:
-      - web
+      - database
       - redis
     env_file:
       - ./.env
@@ -74,18 +76,18 @@ services:
     
   celery-beat: 
     container_name: celery_beat
-    image: celery:latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: web:django
     restart: always
     command: celery -A social_media_project beat -l INFO
+    volumes:
+      - ./backend:/social_media_project/
     env_file:
       - ./.env
     depends_on:
       - celery
     links:
-      - database:db
+      - database
+      - redis
     networks:
       - net
       - db 
@@ -102,10 +104,12 @@ services:
     depends_on:
       - celery
     links:
-      - database:db 
+      - database:db
+      - celery
+      - celery-beat
     networks:
       - net
-      - flower_prome
+      - monitoring
     
   prometheus:
     image: prom/prometheus:latest
@@ -114,23 +118,36 @@ services:
     ports:
       - 9090:9090
     volumes:
-      - ./monitor.yml:/etc/prometheus/prometheus.yml 
-    links:
-      - flower:flower 
+      - ./monitor.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     depends_on:
       - flower
     networks:
-      - flower_prome
+      - monitoring 
 
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+    volumes:
+      - grafana:/data/grafana
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
 
 
 networks:
   db: 
   net:
-  flower_prome:
-
+  monitoring:
 
 volumes:
   db: 
   redis:
   web:
+  prometheus_data: {}
+  grafana: {}

@@ -34,7 +34,7 @@ from .serializers import (
     BlockSesrializer,
 )
 from django.utils.translation import gettext_lazy as _
-from .utils import get_user_from_uuid, activation_url, User
+from .utils import get_user_from_uuid, check_block_relation, User
 from rest_framework.views import APIView
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -58,6 +58,9 @@ class ListUsers(PageNumberPagination):
         parameters=[
             OpenApiParameter(
                 name="username", description="search by username", type=str
+            ),
+            OpenApiParameter(
+                name="fields", description="select fields to represent", type=str
             ),
         ],
     ),
@@ -96,6 +99,14 @@ class ListRegisterUserView(ListCreateAPIView):
                 username__contains=filters.get("username")
             )
         return self.queryset
+
+    def filter_queryset(self, queryset):
+        curr_user = self.request.user
+        usernames = [
+            user.username for user in queryset if check_block_relation(curr_user, user)
+        ]
+        queryset = queryset.exclude(username__in=usernames)
+        return queryset
 
     @method_decorator(cache_page(timeout=60 * 60 * 24, key_prefix="get-users"))
     def get(self, request, *args, **kwargs):
@@ -290,6 +301,9 @@ class ResetPassword(CreateAPIView):
     get=extend_schema(
         operation_id="get user data",
         description="get user data by username_validator",
+        parameters=[
+            OpenApiParameter(name="fields", description="select fields to represent")
+        ],
     ),
     patch=extend_schema(
         operation_id="updata user data",

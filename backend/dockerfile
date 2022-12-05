@@ -1,19 +1,11 @@
 # python alpine version to make image size as small as possible
-FROM python:3.9-alpine3.15
+FROM python:3.10-alpine
 
 # prevent writing pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # prevent buffering stdout and stderr
 ENV PYTHONUNBUFFERED=1
-
-
-# using env
-# https://pythonspeed.com/articles/activate-virtualenv-dockerfile/
-# ENV VERTUAL_ENV=/social_media_project/env 
-# RUN python -m venv $VERTUAL_ENV
-# ENV PATH="$VERTUAL_ENV/:$PATH"
-# ENV PIP_ROOT_USER_ACTION=ignore
 
 # install postgres client to interact with postgres
 RUN apk add --update --no-cache postgresql-client jpeg-dev 
@@ -22,12 +14,11 @@ RUN apk add --update --no-cache --virtual .tmp-build-deps \
 
 WORKDIR /social_media_project
 
-RUN RUN python -m venv /social_media_project/env
+RUN python -m venv /social_media_project/env 
 
 COPY . /social_media_project/
 
 # install packages in the file
-RUN python -m /social_media_project/env/bin/pip install -U pip && \
-    /social_media_project/env/bin/pip install -Ur \
-                     /social_media_project/requirements.txt
+RUN python -m pip install -U pip && \
+    python -m pip install -Ur /social_media_project/requirements.txt
 

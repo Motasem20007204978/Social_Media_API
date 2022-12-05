@@ -1,4 +1,4 @@
-*.pyc
+**/*.pyc
 *.pyo
 *.mo
 *.db
@@ -19,7 +19,7 @@ LICENSE
 *.md
 .sass-cache
 .vagrant/
-__pycache__
+**/__pycache__
 dist
 docs
 env

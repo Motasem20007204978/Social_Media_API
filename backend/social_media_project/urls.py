@@ -14,22 +14,23 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
     # Optional UI:
     path(
-        "api/schema/swagger-ui/",
+        "schema/swagger-ui/",
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
     path(
-        "api/schema/redoc/",
+        "schema/redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
     path("admin/", admin.site.urls),
-    path("api/users/", include("users_app.urls")),
-    path("api/posts/", include("posts_app.urls")),
-    path("api/chats/", include("chats_app.urls")),
-    path("api/notifications/", include("notifications_app.urls")),
+    path("users/", include("users_app.urls")),
+    path("posts/", include("posts_app.urls")),
+    path("chats/", include("chats_app.urls")),
+    path("notifications/", include("notifications_app.urls")),
     path("api-auth/", include("rest_framework.urls")),
+    path("", include("django_prometheus.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

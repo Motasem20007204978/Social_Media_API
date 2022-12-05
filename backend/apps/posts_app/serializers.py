@@ -5,6 +5,7 @@ from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_base64.fields import Base64FileField
 from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
+from drf_queryfields.mixins import QueryFieldsMixin
 
 
 @extend_schema_field(field=OpenApiTypes.OBJECT)
@@ -52,7 +53,7 @@ class LikeSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     user = RelatedUser(read_only=True)
-    likes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # likes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     post = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -63,7 +64,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "post",
             "parent",
             "text",
-            "likes",
+            "count_likes",
             "count_replies",
             "created",
             "modified",
@@ -104,10 +105,10 @@ class AttachmentSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
 
-class PostFeedSerializer(WritableNestedModelSerializer):
+class PostFeedSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
     user = RelatedUser(read_only=True)
     attachments = AttachmentSerializer(many=True)
-    likes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # likes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Post
@@ -117,7 +118,7 @@ class PostFeedSerializer(WritableNestedModelSerializer):
             "text",
             "created",
             "modified",
-            "likes",
+            "count_likes",
             "count_comments",
             "attachments",
         ]

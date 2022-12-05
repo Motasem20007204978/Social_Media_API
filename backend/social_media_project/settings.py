@@ -57,6 +57,7 @@ THIRD_PARTY_APPS = [
     "django_extensions",
     "rest_framework_simplejwt.token_blacklist",
     "drf_queryfields",
+    "django_prometheus",
 ]
 
 LOCAL_APPS = [
@@ -76,6 +77,7 @@ SELL_PLUS = "ipython"
 SITE_ID = 1
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -83,7 +85,29 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
+
+PROMETHEUS_LATENCY_BUCKETS = (
+    0.1,
+    0.2,
+    0.5,
+    0.6,
+    0.8,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    7.5,
+    9.0,
+    12.0,
+    15.0,
+    20.0,
+    30.0,
+    float("inf"),
+)
 
 ROOT_URLCONF = "social_media_project.urls"
 
@@ -111,14 +135,14 @@ WSGI_APPLICATION = "social_media_project.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-        # "ENGINE": "django.db.backends.postgresql",
-        # "NAME": config("DB_NAME"),
-        # "USER": config("DB_USER"),
-        # "PASSWORD": config("DB_PASSWORD"),
-        # "HOST": config("DB_HOST"),
-        # "PORT": 5432,
+        # "ENGINE": "django.db.backends.sqlite3",
+        # "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DB_NAME"),
+        "USER": config("DB_USER"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": config("DB_HOST"),
+        "PORT": 5432,
     }
 }
 
@@ -140,10 +164,6 @@ SPECTACULAR_SETTINGS = {
         "name": "Author ",
         "email": "motasemalmobayyed@gmail.com",
     },
-    # "SERVERS": [
-    #     {'url':'http://localhost:5000', 'description':'localhost:5000'},
-    #     {'url':'http://127.0.0.1:5000', 'description':'localhost'},
-    # ],
     "COMPONENT_SPLIT_REQUEST": True,
     "GENERIC_ADDITIONAL_PROPERTIES": "dict",
 }

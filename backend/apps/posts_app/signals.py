@@ -1,14 +1,42 @@
 from django.dispatch import receiver
-from django.db.models.signals import post_delete
-from .models import Post, Comment, Post
-from .tasks import delete_likes
+from django.db.models.signals import post_delete, post_save
+from .models import Like, Post, Comment
+from .tasks import delete_likes, notifying_post, notifying_like
+from notifications_app.tasks import delete_notifications
 
 
 @receiver(post_delete, sender=Post)
-def delete_likes_and_comments(sender, instance, **kwargs):
-    delete_likes.delay(instance, "post")
+def delete_post_likes(sender, instance, **kwargs):
+    delete_likes.delay(instance.id, "post")
 
 
 @receiver(post_delete, sender=Comment)
-def delete_like_and_replies(sender, instance, **kwargs):
-    delete_likes.delay(instance, "comment")
+def delete_comment_like(instance, **kwargs):
+    delete_likes.delay(instance.id, "comment")
+
+
+@receiver(post_save, sender=Post)
+def notify_posting(sender, instance, created, **kwargs):
+    if created:
+        notifying_post.delay(instance.id)
+
+
+@receiver(post_delete, sender=Post)
+def delete_post_notifications(sender, instance, **kwargs):
+    delete_notifications.delay(instance.id, "post_id")
+
+
+@receiver(post_save, sender=Like)
+def delete_like_notification(sender, instance, **kwargs):
+    notifying_like.delay(instance.id, instance.provider)
+
+
+@receiver(post_delete, sender=Like)
+def delete_like_notification(sender, instance, **kwargs):
+    delete_notifications.delay(instance.id, "like_id")
+
+
+@receiver(post_delete, sender=Comment)
+def delete_comment_notification(sender, instance, **kwargs):
+    search_word = "reply_id" if instance.parent else "comment_id"
+    delete_notifications.delay(instance.id, search_word)

@@ -8,6 +8,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_base64.fields import Base64ImageField
 from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_queryfields.mixins import QueryFieldsMixin
+from .utils import check_block_relation
 
 
 def repr_data(value):
@@ -260,10 +261,13 @@ class FollowSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get("request")
-        attrs["from_user"] = request.user
+        sender = request.user
+        attrs["from_user"] = sender
         username = request.resolver_match.kwargs.get("username")
         attrs["username"] = username
-        get_object_or_404(User, username=username)
+        receiver = get_object_or_404(User, username=username)
+        if check_block_relation(sender, receiver):
+            raise serializers.ValidationError("you connot follow this user", code=404)
         return attrs
 
 
@@ -272,4 +276,3 @@ class BlockSesrializer(FollowSerializer):
         model = Block
         fields = ("from_user", "to_user")
         read_only_fields = ("from_user", "to_user")
-        ...

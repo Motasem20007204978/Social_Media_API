@@ -30,7 +30,7 @@ such as:
 message brokers can be used with celery:
 - rabbitmq --> most used
 - redis
-- mmazon sqs
+- amazon sqs
 """
 
 from datetime import timedelta
@@ -38,7 +38,7 @@ from datetime import timedelta
 app.conf.beat_schedule = {
     "delete-inactivated-users": {
         "task": "delete_inactivated_users",
-        "schedule": timedelta(days=5),
+        "schedule": timedelta(days=1),
     },
     "delete-expired-tokens": {
         "task": "delete_expired_tokens",
