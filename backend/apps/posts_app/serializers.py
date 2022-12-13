@@ -3,12 +3,13 @@ from .models import Attachment, Post, Comment, Like
 from rest_framework.generics import get_object_or_404
 from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_base64.fields import Base64FileField
-from drf_spectacular.utils import extend_schema_field
-from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    extend_schema_serializer,
+    OpenApiExample,
+)
 from drf_queryfields.mixins import QueryFieldsMixin
 
 
-@extend_schema_field(field=OpenApiTypes.OBJECT)
 class RelatedUser(serializers.RelatedField):
     def to_representation(self, value):
         bostedBy = {
@@ -20,6 +21,25 @@ class RelatedUser(serializers.RelatedField):
         return bostedBy
 
 
+@extend_schema_serializer(
+    exclude_fields=["user"],
+    examples=[
+        OpenApiExample(
+            name="like data",
+            value={
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "user": {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "username": "string",
+                    "full_name": "string",
+                    "picture": "example.com/media/profile_pic/32435223-2532.jpg",
+                },
+                "content_type": "post",
+                "object_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            },
+        )
+    ],
+)
 class LikeSerializer(serializers.ModelSerializer):
     user = RelatedUser(read_only=True)
 
@@ -51,6 +71,30 @@ class LikeSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+@extend_schema_serializer(
+    exclude_fields=["count_likes", "count_replies", "user"],
+    examples=[
+        OpenApiExample(
+            name="comment data",
+            value={
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "user": {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "username": "string",
+                    "full_name": "string",
+                    "picture": "example.com/media/profile_pic/32435223-2532.jpg",
+                },
+                "post": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "parent": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "text": "string",
+                "count_likes": 30,
+                "count_replies": 50,
+                "created": "2022-12-13T17:26:25.901Z",
+                "modified": "2022-12-13T17:26:25.901Z",
+            },
+        )
+    ],
+)
 class CommentSerializer(serializers.ModelSerializer):
     user = RelatedUser(read_only=True)
     # likes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
@@ -105,10 +149,34 @@ class AttachmentSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
 
+@extend_schema_serializer(
+    exclude_fields=["user", "count_likes", "count_comments"],
+    examples=[
+        OpenApiExample(
+            name="post data",
+            value={
+                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "user": {
+                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "username": "string",
+                    "full_name": "string",
+                    "picture": "example.com/media/profile_pic/32435223-2532.jpg",
+                },
+                "text": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "count_likes": 30,
+                "count_comments": 50,
+                "attachments": [
+                    {"id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "file": "string"}
+                ],
+                "created": "2022-12-13T17:26:25.901Z",
+                "modified": "2022-12-13T17:26:25.901Z",
+            },
+        )
+    ],
+)
 class PostFeedSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
     user = RelatedUser(read_only=True)
     attachments = AttachmentSerializer(many=True)
-    # likes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Post
@@ -116,11 +184,11 @@ class PostFeedSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
             "id",
             "user",
             "text",
-            "created",
-            "modified",
             "count_likes",
             "count_comments",
             "attachments",
+            "created",
+            "modified",
         ]
         read_only_fields = ["id", "user"]
 

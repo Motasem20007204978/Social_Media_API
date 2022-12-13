@@ -2,14 +2,13 @@ from django.db.models.signals import *
 from .models import User, Profile, Follow, Block
 from django.dispatch import receiver
 from notifications_app.tasks import delete_notifications
-from .tasks import delete_following_relation, notifying_following
+from .tasks import delete_following_relation, notifying_following, create_user_profile
 
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        print("creating profile...")
-        Profile.objects.create(user=instance)
+        create_user_profile.delay(instance.id)
 
 
 @receiver(pre_save, sender=Follow)

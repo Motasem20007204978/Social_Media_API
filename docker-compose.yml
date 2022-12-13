@@ -119,26 +119,10 @@ services:
       - 9090:9090
     volumes:
       - ./monitor.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
     depends_on:
       - flower
     networks:
       - monitoring 
-
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    environment:
-      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
-    volumes:
-      - grafana:/data/grafana
-    ports:
-      - 3000:3000
-    depends_on:
-      - prometheus
-    networks:
-      - monitoring
-
 
 networks:
   db: 

@@ -1,8 +1,54 @@
 name: github-actions
+run-name: ${{github.actor}} is learning github actions
 on: [push, pull_request]
+
 jobs:
-  linting:
+  setup:
     runs-on: ubuntu-latest
+    strategy: 
+      max-parallel: 4
+  
+  linting:
+    name: black formatter
+    needs: setup
     steps:
       - uses: actions/checkout@v3
-      - uses: psf/black@stable
+      - name: Check files using black formatter
+        uses: datadog/action-py-black-formatter@v2.1
+        id: black_action
+        with:
+          only_changed_files: "true"
+          check_mode: "true"
+      - name: Annotate diff changes using reviewdog
+        if: steps.black_action.outputs.is_formatted == "true"
+        uses: reviewdog/action-suggester@v1
+        with:
+          tool_name: blackfmt
+
+  pyre:
+    needs: setup
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Pyre Action
+        uses: facebook/pyre-action
+        with:
+            repo-directory: './'
+            requirements-path: './backend/requirements.txt'
+
+  test:
+    needs: linting
+    steps:
+      # checks out your repository onto the runner, allowing you to run scripts or other actions against your code (such as build and test tools). 
+      - uses: actions/checkout@v3
+      - name: Setup python 
+        uses: action/setup-python@v4
+        with: 
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements.txt ]; then pip install -Ur ./backend/requirements.txt; fi
+      # - name: Run tests
+      #   run: |
+      #     python manage.py test

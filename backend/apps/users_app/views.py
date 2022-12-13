@@ -42,6 +42,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 import requests
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from .tasks import send_activation
 
 # Create your views here.
@@ -53,7 +54,7 @@ class ListUsers(PageNumberPagination):
 
 @extend_schema_view(
     get=extend_schema(
-        description="get users by search with username or part of username, it get only first 10 users of matching username",
+        description="takes username or fields and return users' data according to username or fields to be returned",
         operation_id="list users",
         parameters=[
             OpenApiParameter(
@@ -66,18 +67,16 @@ class ListUsers(PageNumberPagination):
     ),
     post=extend_schema(
         operation_id="Register",
-        description="Register a new user",
+        description="takes user data and stores it, then returns a message ensures that the registration successful if the data valid",
         responses={
-            201: OpenApiResponse(
+            200: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
-                description="success registration and needs verifying",
                 examples=[
                     OpenApiExample(
                         name="Registering User Response",
-                        value={"message": "string"},
-                        status_codes=["201"],
-                        response_only=True,
-                        description="after registering success, the system will send you activation email in your box",
+                        value={
+                            "message": "registration success, chekc your email to verify account"
+                        },
                     ),
                 ],
             ),
@@ -103,12 +102,19 @@ class ListRegisterUserView(ListCreateAPIView):
     def filter_queryset(self, queryset):
         curr_user = self.request.user
         usernames = [
-            user.username for user in queryset if check_block_relation(curr_user, user)
+            user.username
+            for user in queryset.all()
+            if check_block_relation(curr_user, user)
         ]
         queryset = queryset.exclude(username__in=usernames)
         return queryset
 
     @method_decorator(cache_page(timeout=60 * 60 * 24, key_prefix="get-users"))
+    @method_decorator(
+        vary_on_headers(
+            "Authorization",
+        )
+    )
     def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({"message": "user must be authenticated"}, status=401)
@@ -125,7 +131,6 @@ class ListRegisterUserView(ListCreateAPIView):
                     ", we sent emial verification link in your inbox"
                 )
             },
-            status=201,
         )
 
 
@@ -137,17 +142,14 @@ class EmailActivationData(CreateAPIView):
 class ResetEmailVerification(EmailActivationData):
     @extend_schema(
         operation_id="reset verification",
-        description="reset email verification token and resent email activation link",
+        description="takes email and resends email activation link with uuid and token for the user",
         responses={
-            100: OpenApiResponse(
+            201: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
-                description="email activation link is sent",
                 examples=[
                     OpenApiExample(
                         name="reset activation response",
-                        description="after reset, check your inbox to verifying your account",
                         value={"message": "email activation link is reset and sent"},
-                        status_codes=["100"],
                     )
                 ],
             )
@@ -156,23 +158,21 @@ class ResetEmailVerification(EmailActivationData):
     def post(self, request):
         super().post(request)
         send_activation.delay(request.data)
-        return Response({"messaga": "check your email"}, status=100)
+        return Response({"messaga": "check your email"}, status=201)
 
 
 @extend_schema_view(
     get=extend_schema(
         operation_id="verify email",
-        description="email verification by token",
+        description="takes uuid and token to check and return a message ensures the successful verification process",
         responses={
             200: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
-                description="success verification",
+                description="success verification if parameters are valid",
                 examples=[
                     OpenApiExample(
                         name="email verification",
-                        value={"message": "string"},
-                        status_codes=["200"],
-                        description="after verifying the account, you can login and use services",
+                        value={"message": "Email successfully confirmed"},
                     )
                 ],
             )
@@ -190,34 +190,14 @@ class VerifyEmail(GenericAPIView):
         if not user.is_active:
             user.activate()
             user.update_login()
-            return Response({"activation": "Email successfully confirmed"}, status=200)
-        return Response({"error": "user is already verified"}, status=301)
+            return Response({"activation": "Email successfully confirmed"})
+        return Response({"error": "user is already verified"})
 
 
 @extend_schema_view(
     post=extend_schema(
         operation_id="Login",
-        responses={
-            200: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                description="login data",
-                examples=[
-                    OpenApiExample(
-                        name="ok",
-                        description="Login Response",
-                        value={
-                            "refresh": "string",
-                            "access": "string",
-                            "user": {
-                                "username": "string",
-                                "name": "string",
-                                "email": "string",
-                            },
-                        },
-                    )
-                ],
-            )
-        },
+        description="takes user credentials (email and password) and returns login data if the credentials is valid",
     )
 )
 class LoginView(TokenObtainPairView):
@@ -238,18 +218,16 @@ class LoginWithGoogleView(CreateAPIView):
 @extend_schema_view(
     post=extend_schema(
         operation_id="forget password",
+        description="takes user's email and return a message enshure that is an activation link is sent to your email inbox to reset password",
         responses={
-            100: OpenApiResponse(
+            200: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
-                description="forget password responses reset password email link",
                 examples=[
                     OpenApiExample(
                         name="forgetting password response",
                         value={
                             "message": "check email reset password link",
                         },
-                        description="reset password link will be sent as email message at your inbox",
-                        status_codes=["100"],
                     )
                 ],
             )
@@ -264,24 +242,22 @@ class ForgetPassowrd(EmailActivationData):
             "url_name": "reset-password",
         }
         send_activation.delay(data)
-        return Response({"messaga": "check your email to reset password"}, status=100)
+        return Response({"messaga": "check your email to reset password"})
 
 
 @extend_schema_view(
     post=extend_schema(
         operation_id="reset password",
+        description="takes uuid and token from sent email as a parameters and check if the parameters is valid, then it takes new password to be reset to the users' account",
         responses={
             201: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
-                description="reset password and save the new",
                 examples=[
                     OpenApiExample(
                         name="resetting password response",
                         value={
                             "message": "new password is set successfully",
                         },
-                        description="reset password is done",
-                        status_codes=["201"],
                     )
                 ],
             )
@@ -311,17 +287,12 @@ class ResetPassword(CreateAPIView):
     ),
     delete=extend_schema(
         operation_id="delete user",
-        description="delete user data by username_validator, iff the authenticated user is the name's user",
+        description="takes username and delete the user, iff the authenticated user is the name's user",
         responses={
             204: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                description="success deletion",
                 examples=[
                     OpenApiExample(
                         name="delete user",
-                        description="after deleting your account, you should register a new one",
-                        value={"message": "string"},
-                        status_codes=["204"],
                     )
                 ],
             )
@@ -345,7 +316,6 @@ class ProfileView(RetrieveUpdateDestroyAPIView):
         return super().delete(request, *args, **kwargs)
 
     def patch(self, request, *args, **kwargs):
-        kwargs["hell"] = "hell"
         if self.get_object() != request.user:
             return Response({"message": "user cannot update another user"}, status=401)
         return super().patch(request, *args, **kwargs)
@@ -354,18 +324,16 @@ class ProfileView(RetrieveUpdateDestroyAPIView):
 @extend_schema_view(
     post=extend_schema(
         operation_id="change password",
+        description="takes the old password to check if it is correct for the curren person, and then reset the old with new password",
         responses={
             201: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
-                description="password changed",
                 examples=[
                     OpenApiExample(
                         name="change password",
-                        description="Change password",
                         value={
                             "message": "password changed",
                         },
-                        status_codes=["201"],
                     )
                 ],
             ),
@@ -384,15 +352,11 @@ class ChangePasswordView(CreateAPIView):
 @extend_schema_view(
     post=extend_schema(
         operation_id="follow a user",
-        responses={
-            201: ProfileSerializer,
-        },
+        description="takes the username of user to be followed to make following process, and then returns the user following lists",
     ),
     delete=extend_schema(
         operation_id="unfollow a user",
-        responses={
-            204: ProfileSerializer,
-        },
+        description="takes the username of the user to be unfollowed to make unfollowing process",
     ),
 )
 class FollowView(DestroyAPIView, CreateAPIView):
@@ -426,15 +390,9 @@ class FollowView(DestroyAPIView, CreateAPIView):
 @extend_schema_view(
     post=extend_schema(
         operation_id="Block a User",
-        responses={
-            201: ProfileSerializer,
-        },
     ),
     delete=extend_schema(
         operation_id="Unblock a User",
-        responses={
-            204: ProfileSerializer,
-        },
     ),
 )
 class BlockView(FollowView):

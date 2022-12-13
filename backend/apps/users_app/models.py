@@ -24,9 +24,7 @@ class User(AbstractUser):
         ("github", "github"),
     ]
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    provider = models.CharField(
-        max_length=10, choices=PROVIDERS, default=PROVIDERS[0][0]
-    )
+    provider = models.CharField(max_length=10, choices=PROVIDERS, default="email")
     username = models.CharField(
         unique=True,
         max_length=30,
@@ -65,6 +63,22 @@ class User(AbstractUser):
     @property
     def full_name(self) -> str:
         return super().get_full_name()
+
+    @property
+    def followings_count(self) -> int:
+        return self.followings.count()
+
+    @property
+    def followers_count(self):
+        return self.followers.count()
+
+    @property
+    def blockings_count(self) -> int:
+        return self.blockings.count()
+
+    @property
+    def blockers_count(self):
+        return self.blockers.count()
 
     def check_password(self, raw_password: str) -> bool:
         if not super().check_password(raw_password):
@@ -193,11 +207,11 @@ class Profile(models.Model):
         default="default-image.jpg",
     )
     birth_date = models.DateField(null=True, blank=True)
-    CHOICES = [("U", "-----"), ("M", "male"), ("F", "female")]
+    CHOICES = [("undefined", "-----"), ("male", "male"), ("female", "female")]
     gender = models.CharField(
-        max_length=1,
+        max_length=10,
         choices=CHOICES,
-        default="U",
+        default="undefined",
     )
 
     bio = models.TextField(

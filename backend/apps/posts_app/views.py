@@ -3,14 +3,10 @@ from .serializers import *
 from rest_framework.response import Response
 from rest_framework.generics import (
     RetrieveUpdateDestroyAPIView,
-    CreateAPIView,
     ListCreateAPIView,
     DestroyAPIView,
-    RetrieveAPIView,
     get_object_or_404,
-    RetrieveUpdateAPIView,
 )
-from django.contrib.contenttypes.models import ContentType
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
@@ -85,7 +81,7 @@ class PostsView(ListCreateAPIView):
     )
     def get(self, request, *args, **kwargs):
         if self.specific_user:
-            if self.specific_user in request.user.blockings:
+            if self.specific_user in request.user.blockings.all():
                 return Response(
                     data={"invalid_access": "this user is blocked"}, status=404
                 )

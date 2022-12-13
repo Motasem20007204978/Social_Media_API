@@ -1,35 +1,40 @@
-from django.test import TestCase
-import requests
-
-# from django.core.files.images import ImageFile
-# Create your tests here.
-
-sq = lambda x: x**2
-ml = lambda x, y: x * y
-
-# cosine
-d1 = [1, 2, 0, -1]
-d2 = [2, 0, -1, 0]
-d1s = sum(map(sq, d1))
-d2s = sum(map(sq, d2))
-
-d = sum(map(ml, d1, d2))
-
-cos = d / (d1s**0.5 * d2s**0.5)
-print(cos)
+from cgitb import text
+from rest_framework.test import APITestCase, URLPatternsTestCase
+import base64
+from django.urls import path, include, reverse
+from django.utils.crypto import get_random_string
 
 
-# correlation
-d1_mean = sum(d1) / len(d1)
-d2_mean = sum(d2) / len(d2)
+class UserAuthTest(APITestCase, URLPatternsTestCase):
 
-sub_d1 = [i - d1_mean for i in d1]
-sub_d2 = [i - d2_mean for i in d2]
+    urlpatterns = [path("users/", include("users_app.urls"))]
 
-cov = sum(map(ml, sub_d1, sub_d2)) / (len(d1) - 1)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.password = get_random_string(10)
 
-std_d1 = (sum(map(sq, sub_d1)) / (len(d1) - 1)) ** 0.5
-std_d2 = (sum(map(sq, sub_d2)) / (len(d2) - 1)) ** 0.5
+    def test_create_account(self):
+        url = reverse(viewname="user-list-create")
+        data = {
+            "username": "user_name",
+            "email": "user@gmail.com",
+            "first_name": "first_name",
+            "last_name": "last_name",
+            "password": self.password,
+            "again_pass": self.password,
+        }
+        response = self.client.post(path=url, data=data)
+        self.assertEqual(response.status_code, 200)
+        response_data = {
+            "message": "user registerd successfully, we sent emial verification link in your inbox"
+        }
+        self.assertEqual(response.data, response_data)
 
-corr = cov / (std_d1 * std_d2)
-print(corr)
+    def login_test(self):
+        cred = {"email": "user@gmail.com", "password": self.password}
+        can_login = self.client.login(credentials=cred)
+        self.assertTrue(can_login)
+
+        url = reverse("signin-user")
+        response = self.client.post(path=url, data=cred)
+        self.assertEquals(response.status_code, 200)

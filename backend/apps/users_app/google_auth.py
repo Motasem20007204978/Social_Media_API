@@ -26,3 +26,8 @@ def google_login_data():
     profile_info = session.get("https://www.googleapis.com/userinfo/v2/me").json()
 
     return profile_info
+
+
+if __name__ == "__main__":
+    data = google_login_data()
+    print(data)

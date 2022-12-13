@@ -21,6 +21,8 @@ def mark_as_read(notif_id):
 
 @shared_task(name="create_notifications")
 def create_notification(sender_id, receiver_id, options: dict = None):
+    if sender_id == receiver_id:
+        return "cannot notify yourself"
     data = {
         "sender": User.objects.get(id=sender_id),
         "receiver": User.objects.get(id=receiver_id),

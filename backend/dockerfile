@@ -14,11 +14,8 @@ RUN apk add --update --no-cache --virtual .tmp-build-deps \
 
 WORKDIR /social_media_project
 
-RUN python -m venv /social_media_project/env 
-
 COPY . /social_media_project/
 
 # install packages in the file
-RUN python -m pip install -U pip && \
-    python -m pip install -Ur /social_media_project/requirements.txt
-
+RUN python -m pip install -U pip \
+        python -m pip install -r /social_media_project/requirements.txt

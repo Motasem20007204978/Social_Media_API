@@ -58,6 +58,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "drf_queryfields",
     "django_prometheus",
+    "django_redis",
 ]
 
 LOCAL_APPS = [
@@ -109,6 +110,8 @@ PROMETHEUS_LATENCY_BUCKETS = (
     float("inf"),
 )
 
+PROMETHEUS_EXPORT_MIGRATIONS = False  # to avoid migrations dependencies
+
 ROOT_URLCONF = "social_media_project.urls"
 
 TEMPLATES = [
@@ -135,14 +138,14 @@ WSGI_APPLICATION = "social_media_project.wsgi.application"
 
 DATABASES = {
     "default": {
-        # "ENGINE": "django.db.backends.sqlite3",
-        # "NAME": BASE_DIR / "db.sqlite3",
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST"),
-        "PORT": 5432,
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+        # "ENGINE": "django.db.backends.postgresql",
+        # "NAME": config("DB_NAME"),
+        # "USER": config("DB_USER"),
+        # "PASSWORD": config("DB_PASSWORD"),
+        # "HOST": config("DB_HOST"),
+        # "PORT": 5432,
     }
 }
 
@@ -153,7 +156,7 @@ SPECTACULAR_SETTINGS = {
     "PARSER_WHITELIST": ["rest_framework.parsers.JSONParser"],
     # OTHER SETTINGS
     "TITLE": "Social Media API",
-    "DESCRIPTION": "this is the social media API description",
+    "DESCRIPTION": "This API is made with django and rest framework to simulate social media applications",
     "AUTHOR": "Social Media API",
     "VERSION": "1.0.0 (v1)",
     "LICENSE": {
@@ -174,11 +177,12 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=10),
     "UPDATE_LAST_LOGIN": True,  # for TokenObtainBairView
     "TOKEN_BLACKLIST_SERIALIZER": "rest_framework_simplejwt.serializers.TokenBlacklistSerializer",
     "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
@@ -198,7 +202,7 @@ CHACHE = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": config("CELERY_RESULT_BACKEND"),
         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-        "KEY_PREFIX": "example",
+        "KEY_PREFIX": "API",
     }
 }
 # to make redis does not interfere with django admin panel and current session

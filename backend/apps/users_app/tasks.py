@@ -8,7 +8,7 @@ from rest_framework.generics import get_object_or_404
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
 from notifications_app.tasks import create_notification
-from .models import Block, Follow
+from .models import Block, Follow, Profile, User
 from django.db.models import Q
 
 
@@ -16,6 +16,13 @@ from django.db.models import Q
 def add(x, y):
     time.sleep(5)
     return x + y
+
+
+@shared_task(name="create_user_profile")
+def create_user_profile(uid):
+    user = User.objects.get(id=uid)
+    Profile.objects.create(user=user)
+    return "profile created"
 
 
 @shared_task(name="delete_inactivated_users")

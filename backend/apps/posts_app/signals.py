@@ -27,8 +27,8 @@ def delete_post_notifications(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Like)
-def delete_like_notification(sender, instance, **kwargs):
-    notifying_like.delay(instance.id, instance.provider)
+def create_like_notification(sender, instance, **kwargs):
+    notifying_like.delay(instance.id, instance.content_type)
 
 
 @receiver(post_delete, sender=Like)
