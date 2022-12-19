@@ -12,6 +12,7 @@ from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_queryfields.mixins import QueryFieldsMixin
 from .utils import check_block_relation
 from rest_framework_simplejwt.settings import api_settings
+from rest_framework.exceptions import PermissionDenied
 
 
 def repr_data(value):
@@ -59,6 +60,7 @@ fields_representation = {
     "email": "user@example.com",
     "first_name": "string",
     "last_name": "string",
+    "full_name": "string",
     "profile": {
         "profile_pic": "example.com/media/profile_pictires/pic.jpg",
         "birth_date": "2000-03-23",
@@ -79,7 +81,16 @@ fields_representation = {
 
 
 @extend_schema_serializer(
-    exclude_fields=[*fields_representation.keys()],
+    exclude_fields=[
+        "followers",
+        "followings",
+        "blockers",
+        "blockings",
+        "followers_count",
+        "follwings_count",
+        "blockers_count",
+        "blockings_count",
+    ],
     examples=[
         OpenApiExample(
             name="profile data",
@@ -212,21 +223,24 @@ class ResetPasswordSerializer(serializers.Serializer):
         return attrs
 
 
+login_response = {
+    "refresh": "string",
+    "access": "string",
+    "refresh_token_timeout": 20000,
+    "access_token_timeout": 3600,
+    "user": {
+        "username": "string",
+        "name": "string",
+        "email": "string",
+    },
+}
+
+
 @extend_schema_serializer(
     examples=[
         OpenApiExample(
             name="success login",
-            value={
-                "refresh": "string",
-                "access": "string",
-                "refresh_token_timeout": 20000,
-                "access_token_timeout": 3600,
-                "user": {
-                    "username": "string",
-                    "name": "string",
-                    "email": "string",
-                },
-            },
+            value=login_response,
             response_only=True,
             status_codes=[200],
         )
@@ -250,6 +264,16 @@ from django.utils.crypto import get_random_string
 from decouple import config
 
 
+@extend_schema_serializer(
+    examples=[
+        OpenApiExample(
+            name="google login",
+            value=login_response,
+            response_only=True,
+            status_codes=[201],
+        )
+    ],
+)
 class GoogleLoginSerializer(serializers.Serializer):
     def login(self, data):
         serializer = LoginSerializer(data=data)
@@ -347,7 +371,9 @@ class FollowSerializer(serializers.ModelSerializer):
         attrs["username"] = username
         receiver = get_object_or_404(User, username=username)
         if check_block_relation(sender, receiver):
-            raise serializers.ValidationError("you connot follow this user", code=404)
+            raise PermissionDenied(
+                "you connot follow this user because you have blocked him"
+            )
         return attrs
 
 

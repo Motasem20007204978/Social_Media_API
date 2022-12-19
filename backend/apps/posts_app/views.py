@@ -1,33 +1,35 @@
 from os import stat
+from time import perf_counter
+from urllib import request
 from .serializers import *
-from rest_framework.response import Response
 from rest_framework.generics import (
     RetrieveUpdateDestroyAPIView,
     ListCreateAPIView,
     DestroyAPIView,
     get_object_or_404,
 )
-from drf_spectacular.utils import (
-    extend_schema,
-    extend_schema_view,
-    OpenApiParameter,
-    OpenApiExample,
-    OpenApiResponse,
-)
-from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from django.utils.decorators import method_decorator
-from django.views.decorators.vary import vary_on_cookie, vary_on_headers
 from django.views.decorators.cache import cache_page
 from django.contrib.auth import get_user_model
 
 
 @extend_schema_view(
     get=extend_schema(
-        description="get home posts or a user's posts",
+        description="returns home posts that obtain the same user and his followings posts, or takes username option if obtained \
+             to check if it exists as a user's username, then return the obtained user's posts.\
+                but if the user is blocked, you cannot get his posts",
         operation_id="list posts",
         parameters=[
-            OpenApiParameter(name="username", description="list by username", type=str),
-            OpenApiParameter(name="fields", description="select fields to represent"),
+            OpenApiParameter(
+                name="username",
+                description="get specific posts for a user by username",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="fields",
+                description="select fields you want to be represented, otherwise it will return all fields",
+            ),
         ],
     ),
     post=extend_schema(
@@ -73,6 +75,10 @@ class PostsView(ListCreateAPIView):
             posts = self.user_post_queryset(queryset)
         return posts
 
+    def check_user_blocked(self, user):
+        if user in self.request.user.blockings.all():
+            return self.permission_denied(request, message="you blocked this user")
+
     @method_decorator(
         decorator=cache_page(
             timeout=60 * 60 * 24, cache="default", key_prefix="get-posts"
@@ -81,11 +87,24 @@ class PostsView(ListCreateAPIView):
     )
     def get(self, request, *args, **kwargs):
         if self.specific_user:
-            if self.specific_user in request.user.blockings.all():
-                return Response(
-                    data={"invalid_access": "this user is blocked"}, status=404
-                )
+            self.check_user_blocked(self.specific_user)
         return super().get(request, *args, **kwargs)
+
+
+class RetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "patch", "delete"]
+
+    def _owner_permissions(self):
+        permissions = self.get_permissions()
+        obj = self.get_object()
+        permissions.append(obj.user)
+        return permissions
+
+    def check_user_permissions(self, permissions_plus: list = []):
+        owner_permissions = self._owner_permissions()
+        permissions = owner_permissions.extend(permissions_plus)
+        if not self.request.user in permissions:
+            return self.permission_denied(self.request)
 
 
 @extend_schema_view(
@@ -93,7 +112,10 @@ class PostsView(ListCreateAPIView):
         description="get home posts or a user's posts",
         operation_id="get post by id",
         parameters=[
-            OpenApiParameter(name="fields", description="select fields to represent")
+            OpenApiParameter(
+                name="fields",
+                description="select fields you want to be represented, otherwise it will return all fields",
+            )
         ],
     ),
     patch=extend_schema(
@@ -105,9 +127,9 @@ class PostsView(ListCreateAPIView):
         description="Delete a Post",
     ),
 )
-class PostDetailView(RetrieveUpdateDestroyAPIView):
+class PostDetailView(RetrieveUpdateDestroy):
     serializer_class = PostFeedSerializer
-    http_method_names = ["get", "patch", "delete"]
+    queryset = Post.objects.all()
 
     # instead of passing lookup field in url and make all changes on it
     def get_object(self):
@@ -120,23 +142,13 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-    @property
-    def user_own_post_permission(self):
-        return self.request.user == self.get_object().user
-
     def patch(self, request, *args, **kwargs):
-        if self.user_own_post_permission:
-            return super().partial_update(request, *args, **kwargs)
-        return Response(
-            {"update not allowed": "this post can be updated only by its user"}
-        )
+        self.check_user_permissions()
+        return super().partial_update(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        if self.user_own_post_permission:
-            return super().delete(request, *args, **kwargs)
-        return Response(
-            {"update not allowed": "this post can be deleted only by its user"}
-        )
+        self.check_user_permissions()
+        return super().delete(request, *args, **kwargs)
 
 
 @extend_schema_view(
@@ -172,7 +184,7 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     ),
     delete=extend_schema(
         operation_id="ullike object",
-        description="unlike a post, comment or reply",
+        description="takes the first id obtained and unlike a post, comment or reply",
         parameters=[
             OpenApiParameter(
                 name="post_id", description="dislike a post by post id", type=str
@@ -234,12 +246,13 @@ class LikeView(ListCreateAPIView, DestroyAPIView):
         elif self.get_reply_id:
             return queryset.filter(content_type="comment", object_id=self.get_reply_id)
 
-    def post(self, request, **kwargs):
-        return super().post(request)
+    def check_delete_permissions(self, obj):
+        if self.request.user != obj.user:
+            return self.permission_denied(request)
 
     def delete(self, request, **kwargs):
-        super().delete(request)
-        return super().get(request)
+        self.check_delete_permissions(self.get_object())
+        return super().delete(request)
 
 
 @extend_schema_view(
@@ -253,11 +266,15 @@ class LikeView(ListCreateAPIView, DestroyAPIView):
         ],
     ),
     post=extend_schema(
-        operation_id="Create Comment",
-        description="create a comment for a post",
+        operation_id="Create Comment or Reply",
+        description="if a comment_id (optional) is obtaied it takes it and make the request as a reply for this comment, \
+            then returns response with parent field based on that parent is the obtained comment, \
+                otherwise it takes post id and make the request as a comment without parent field",
         parameters=[
             OpenApiParameter(
-                name="comment_id", description="create a reply for a comment", type=str
+                name="comment_id",
+                description="if filled with a comment id, it will create a reply for a comment",
+                type=str,
             ),
         ],
     ),
@@ -292,9 +309,6 @@ class CommentPostView(ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
-
 
 @extend_schema_view(
     get=extend_schema(
@@ -308,7 +322,7 @@ class CommentPostView(ListCreateAPIView):
         operation_id="Delete Comment", description="delete comment or reply by id"
     ),
 )
-class ModifyComment(RetrieveUpdateDestroyAPIView):
+class ModifyComment(RetrieveUpdateDestroy):
     serializer_class = CommentSerializer
     queryset = Comment.objects.all()
     http_method_names = ["get", "patch", "delete"]
@@ -318,28 +332,15 @@ class ModifyComment(RetrieveUpdateDestroyAPIView):
         obj = get_object_or_404(Comment, id=obj_id)
         return obj
 
-    @property
-    def delete_permission(self):
+    def check_delete_permissions(self):
         obj = self.get_object()
-        permessions = [obj.user, obj.post.user]
-        if obj.parent:
-            permessions.append(obj.parent.user)
-            ...
-        return self.request.user in permessions
+        permissions_plus = [obj.post.user]
+        return self.check_user_permissions(permissions_plus)
 
     def delete(self, request, **kwargs):
-        if self.delete_permission:
-            return super().delete(request)
-        return Response(
-            {
-                "delete not allowed": "this comment can be deletd only by its user or its post`s user"
-            }
-        )
+        self.check_delete_permissions(request)
+        return super().delete(request)
 
     def patch(self, request, **kwargs):
-        if self.get_object().user == request.user:
-            super().patch(request)
-            return self.get(request)
-        return Response(
-            {"updating not allowed": "this comments can be updated only by its user"}
-        )
+        self.check_user_permissions()
+        return super().patch(request)

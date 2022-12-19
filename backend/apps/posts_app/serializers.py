@@ -10,6 +10,14 @@ from drf_spectacular.utils import (
 from drf_queryfields.mixins import QueryFieldsMixin
 
 
+user_representation = {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "username": "string",
+    "full_name": "string",
+    "picture": "example.com/media/profile_pic/32435223-2532.jpg",
+}
+
+
 class RelatedUser(serializers.RelatedField):
     def to_representation(self, value):
         bostedBy = {
@@ -21,23 +29,18 @@ class RelatedUser(serializers.RelatedField):
         return bostedBy
 
 
+like_representation = {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "user": user_representation,
+    "content_type": "post",
+    "object_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+}
+
+
 @extend_schema_serializer(
     exclude_fields=["user"],
     examples=[
-        OpenApiExample(
-            name="like data",
-            value={
-                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "user": {
-                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                    "username": "string",
-                    "full_name": "string",
-                    "picture": "example.com/media/profile_pic/32435223-2532.jpg",
-                },
-                "content_type": "post",
-                "object_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            },
-        )
+        OpenApiExample(name="like data", value=like_representation, response_only=True)
     ],
 )
 class LikeSerializer(serializers.ModelSerializer):
@@ -71,33 +74,29 @@ class LikeSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+comment_representation = {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "user": user_representation,
+    "post": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "parent": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "text": "string",
+    "count_likes": 30,
+    "count_replies": 50,
+    "created": "2022-12-13T17:26:25.901Z",
+    "modified": "2022-12-13T17:26:25.901Z",
+}
+
+
 @extend_schema_serializer(
-    exclude_fields=["count_likes", "count_replies", "user"],
+    exclude_fields=["user", "count_likes", "count_replies"],
     examples=[
         OpenApiExample(
-            name="comment data",
-            value={
-                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "user": {
-                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                    "username": "string",
-                    "full_name": "string",
-                    "picture": "example.com/media/profile_pic/32435223-2532.jpg",
-                },
-                "post": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "parent": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "text": "string",
-                "count_likes": 30,
-                "count_replies": 50,
-                "created": "2022-12-13T17:26:25.901Z",
-                "modified": "2022-12-13T17:26:25.901Z",
-            },
+            name="comment data", value=comment_representation, response_only=True
         )
     ],
 )
-class CommentSerializer(serializers.ModelSerializer):
+class CommentSerializer(QueryFieldsMixin, serializers.ModelSerializer):
     user = RelatedUser(read_only=True)
-    # likes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     post = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -149,28 +148,31 @@ class AttachmentSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
 
+post_representation = {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "user": user_representation,
+    "text": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "count_likes": 30,
+    "count_comments": 50,
+    "attachments": [
+        {
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "file": "example.com/post_pic/453532-o4f532.jpg",
+        }
+    ],
+    "created": "2022-12-13T17:26:25.901Z",
+    "modified": "2022-12-13T17:26:25.901Z",
+}
+
+
 @extend_schema_serializer(
     exclude_fields=["user", "count_likes", "count_comments"],
     examples=[
         OpenApiExample(
             name="post data",
-            value={
-                "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "user": {
-                    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                    "username": "string",
-                    "full_name": "string",
-                    "picture": "example.com/media/profile_pic/32435223-2532.jpg",
-                },
-                "text": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "count_likes": 30,
-                "count_comments": 50,
-                "attachments": [
-                    {"id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "file": "string"}
-                ],
-                "created": "2022-12-13T17:26:25.901Z",
-                "modified": "2022-12-13T17:26:25.901Z",
-            },
+            value=post_representation,
+            response_only=True,
+            status_codes=[200, 201],
         )
     ],
 )

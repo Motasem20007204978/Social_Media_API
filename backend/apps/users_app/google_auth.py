@@ -19,8 +19,7 @@ def google_login_data():
         f"{PATH}credentials.json",
         SCOPES,
     )
-    flow.run_local_server()
-
+    flow.run_local_server(port=5050)
     session = flow.authorized_session()
 
     profile_info = session.get("https://www.googleapis.com/userinfo/v2/me").json()

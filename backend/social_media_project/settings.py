@@ -59,6 +59,7 @@ THIRD_PARTY_APPS = [
     "drf_queryfields",
     "django_prometheus",
     "django_redis",
+    "channels",
 ]
 
 LOCAL_APPS = [
@@ -73,7 +74,7 @@ INSTALLED_APPS = LOCAL_APPS + DEFAULT_APPS + THIRD_PARTY_APPS
 # customizing user model
 AUTH_USER_MODEL = "users_app.User"
 
-SELL_PLUS = "ipython"
+SHELL_PLUS = "ipython"
 
 SITE_ID = 1
 
@@ -138,14 +139,14 @@ WSGI_APPLICATION = "social_media_project.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-        # "ENGINE": "django.db.backends.postgresql",
-        # "NAME": config("DB_NAME"),
-        # "USER": config("DB_USER"),
-        # "PASSWORD": config("DB_PASSWORD"),
-        # "HOST": config("DB_HOST"),
-        # "PORT": 5432,
+        # "ENGINE": "django.db.backends.sqlite3",
+        # "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DB_NAME"),
+        "USER": config("DB_USER"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": "localhost",
+        "PORT": 5432,
     }
 }
 
@@ -167,6 +168,25 @@ SPECTACULAR_SETTINGS = {
         "name": "Author ",
         "email": "motasemalmobayyed@gmail.com",
     },
+    "EXTERNAL_DOCS": {
+        "url": "https://github.com/Motasem20007204978/Social_Media_API",
+        "description": "Social Media API Source Code",
+    },
+    "SORT_OPERATIONS": False,
+    "SORT_OPERATION_PARAMETERS": False,
+    # 'TAGS': ['users'],
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SERVERS": [
+        {"url": "http://localhost:5000", "description": "API Server"},
+        {
+            "url": "http://localhost:5555",
+            "description": "Flower Server For Executed Tasks",
+        },
+        {
+            "url": "http://localhost:9090",
+            "description": "Prometheus Server For Monitoring Requests",
+        },
+    ],
     "COMPONENT_SPLIT_REQUEST": True,
     "GENERIC_ADDITIONAL_PROPERTIES": "dict",
 }
@@ -192,16 +212,19 @@ SIMPLE_JWT = {
 }
 
 # celery settings
-CELERY_BROKER_URL = config("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND")  # for caching
+CELERY_BROKER_URL = "redis://"
+CELERY_RESULT_BACKEND = "redis://"  # for caching
 CELERY_TIMEZONE = "Asia/Gaza"
 
 # redis (remote dictionary server) for caching
 CHACHE = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": config("CELERY_RESULT_BACKEND"),
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        "LOCATION": "redis://",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MAX_ENTRIES": 2000,
+        },
         "KEY_PREFIX": "API",
     }
 }
@@ -209,6 +232,15 @@ CHACHE = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [("redis://", 6379)]},
+    }
+}
+
+ASGI_APPLICATION = "social_media_project.routing.application"
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -231,7 +263,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # email verification requirements
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = config("PORT", cast=int)
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config("EMAIL_ID")
 EMAIL_HOST_PASSWORD = config("EMAIL_PW")
@@ -270,10 +302,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # activation link using default django token generator in seconds
 PASSWORD_RESET_TIMEOUT = 4000
-
-# google oauth data
-GOOGLE_CLIETN_ID = config("GOOGLE_CLIETN_ID")
-GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
 
 # https://medium.com/@arnopretorius/django-web-application-security-checklist-64bfe2438a29
 

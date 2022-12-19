@@ -12,10 +12,10 @@ User = settings.AUTH_USER_MODEL
 class Notification(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="notifier_users"
+        User, on_delete=models.CASCADE, related_name="sent_notifs"
     )
     receiver = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="notified_users"
+        User, on_delete=models.CASCADE, related_name="received_notifs"
     )
     data = models.JSONField(null=True, blank=True)
     seen = models.BooleanField(default=False)

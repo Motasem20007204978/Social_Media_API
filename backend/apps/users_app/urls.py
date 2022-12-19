@@ -1,5 +1,4 @@
 from django.urls import path
-from rest_framework_simplejwt.views import token_blacklist, token_refresh
 
 from .views import *
 
@@ -17,7 +16,7 @@ urlpatterns = [
     ),
     path("signin", LoginView.as_view(), name="signin-user"),
     path("login-with-google", LoginWithGoogleView.as_view(), name="google-login"),
-    path("refresh", token_refresh, name="refresh-access"),
+    path("refresh", RefreshAccess.as_view(), name="refresh-access"),
     path("password/forgot", ForgetPassowrd.as_view(), name="forget-password"),
     path(
         "password/reset/<str:uuid>/<str:token>",
@@ -25,7 +24,7 @@ urlpatterns = [
         name="reset-password",
     ),
     path("password/change", ChangePasswordView.as_view(), name="change-password"),
-    path("logout", token_blacklist, name="logout"),
+    path("logout", Logout.as_view(), name="logout"),
     path("<str:username>", ProfileView.as_view(), name="user-info"),
     path("following/<str:username>", FollowView.as_view(), name="following"),
     path("blocking/<str:username>", BlockView.as_view(), name="blocking"),

@@ -14,8 +14,7 @@ services:
       - DB_NAME={DB_NAME}
       - DB_USER='{DB_USER}'
       - DB_PASSWORD={DB_PASSWORD}
-    networks:
-      - db
+    network_mode: host
 
   web: # any name
     build: 
@@ -37,13 +36,7 @@ services:
     depends_on:
       - database
       - redis
-    links:
-      - database:db
-      - redis
-    networks:
-      - db
-      - net
-      - monitoring
+    network_mode: host
 
   redis: # Remote Dictionary Server.
     image: redis:alpine
@@ -52,17 +45,13 @@ services:
       - redis:/data/redis
     ports:
       - 6379:6379
-    networks:
-      - net
+    network_mode: host
 
   celery:
     container_name: celery
     image: web:django
     restart: always # restart container automatically if it is stopped manually or fails
     command: celery -A social_media_project worker -l INFO # get information in terminal
-    links:
-      - database
-      - redis
     volumes:
       - ./backend:/social_media_project/
     depends_on:
@@ -70,9 +59,7 @@ services:
       - redis
     env_file:
       - ./.env
-    networks:
-      - net
-      - db 
+    network_mode: host
     
   celery-beat: 
     container_name: celery_beat
@@ -85,12 +72,7 @@ services:
       - ./.env
     depends_on:
       - celery
-    links:
-      - database
-      - redis
-    networks:
-      - net
-      - db 
+    network_mode: host
 
   flower:
     image: mher/flower
@@ -103,13 +85,7 @@ services:
       - ./.env
     depends_on:
       - celery
-    links:
-      - database:db
-      - celery
-      - celery-beat
-    networks:
-      - net
-      - monitoring
+    network_mode: host
     
   prometheus:
     image: prom/prometheus:latest
@@ -121,17 +97,18 @@ services:
       - ./monitor.yml:/etc/prometheus/prometheus.yml
     depends_on:
       - flower
-    networks:
-      - monitoring 
+    network_mode: host
 
 networks:
   db: 
+    driver: host
   net:
+    driver: host
   monitoring:
+    driver: host
 
 volumes:
   db: 
   redis:
   web:
   prometheus_data: {}
-  grafana: {}

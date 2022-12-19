@@ -16,7 +16,6 @@ def activation_url(url_name, uuid64, token):
     relative_url = reverse(url_name, kwargs={"uuid": uuid64, "token": token})
     actiavation_link = f"http://{current_domain}{relative_url}"
     return actiavation_link
-    ...
 
 
 def get_user_from_uuid(uuid):

@@ -1,6 +1,6 @@
 global:
-  scrape_interval: 15s # scrape targets every 15 seconds
-  evaluation_interval: 15s
+  scrape_interval: 300s # scrape targets every 15 seconds
+  evaluation_interval: 300s
 
 scrape_configs:
   - job_name: prometheus
@@ -8,8 +8,8 @@ scrape_configs:
       - targets: ['localhost:9090']
   - job_name: flower
     static_configs:
-      - targets: ['172.19.0.3:5555'] #host in docker network
+      - targets: ['localhost:5555'] #host in docker network
   - job_name: web
     static_configs:
-      - targets: ['172.19.0.2:5000'] #host in docker network
+      - targets: ['localhost:5000'] #host in docker network
 

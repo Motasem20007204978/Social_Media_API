@@ -1,8 +1,11 @@
 from __future__ import absolute_import, unicode_literals
+from re import T
 from celery import shared_task
 from django.core.management import call_command
 from .models import Notification
 from django.contrib.auth import get_user_model
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 User = get_user_model()
 
@@ -32,8 +35,15 @@ def create_notification(sender_id, receiver_id, options: dict = None):
     return f"notification created"
 
 
+channel_layer = get_channel_layer()
+
+
 @shared_task(name="send_notifications")
 def send_notification(notif_id):
+    notification = Notification.objects.get(id=notif_id)
+    async_to_sync(channel_layer.group_send)(
+        "notifications", {"type": "notifications.notification", "text": ""}
+    )
     ...
 
 

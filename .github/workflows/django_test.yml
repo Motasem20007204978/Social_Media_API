@@ -1,4 +1,4 @@
-name: github-actions
+name: django-api-tests
 run-name: ${{github.actor}} is learning github actions
 on: [push, pull_request]
 
@@ -9,7 +9,6 @@ jobs:
       max-parallel: 4
   
   linting:
-    name: black formatter
     needs: setup
     steps:
       - uses: actions/checkout@v3
@@ -32,7 +31,6 @@ jobs:
       - name: Run Pyre Action
         uses: facebook/pyre-action
         with:
-            repo-directory: './'
             requirements-path: './backend/requirements.txt'
 
   test:

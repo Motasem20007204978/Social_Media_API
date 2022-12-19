@@ -17,5 +17,5 @@ WORKDIR /social_media_project
 COPY . /social_media_project/
 
 # install packages in the file
-RUN python -m pip install -U pip \
-        python -m pip install -r /social_media_project/requirements.txt
+RUN  pip install -U pip \
+         pip install -r /social_media_project/requirements.txt

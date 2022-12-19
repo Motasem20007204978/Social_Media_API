@@ -102,10 +102,9 @@ class User(AbstractUser):
         token = default_token_generator.make_token(self)
         return token
 
-    def check_token(self, token):
+    def check_token_validation(self, token):
         if not default_token_generator.check_token(self, token):
-            return False
-        return True
+            raise ValidationError("token is invalid or expired")
 
     def activate(self):
         self.is_active = True
@@ -135,8 +134,8 @@ class Common(models.Model):
             raise
         return super().clean()
 
-    def validate_unique(self, exclude):
-        return super().validate_unique(exclude)
+    def validate_unique(self, **kwargs):
+        return super().validate_unique(**kwargs)
 
     class Meta:
         abstract = True
@@ -160,9 +159,9 @@ class Follow(Common):
         except:
             raise ValidationError("connot follow yourself")
 
-    def validate_unique(self, exclude=[]):
+    def validate_unique(self, **kwargs):
         try:
-            return super().validate_unique(exclude)
+            return super().validate_unique(**kwargs)
         except:
             raise ValidationError("cannot follow the already followed user")
 
@@ -185,9 +184,9 @@ class Block(Common):
         except:
             raise ValidationError("connot block yourself")
 
-    def validate_unique(self, exclude=[]):
+    def validate_unique(self, **kwargs):
         try:
-            return super().validate_unique(exclude)
+            return super().validate_unique(**kwargs)
         except:
             raise ValidationError("cannot block the already blocked user")
 

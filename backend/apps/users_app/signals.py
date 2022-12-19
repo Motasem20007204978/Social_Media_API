@@ -2,13 +2,25 @@ from django.db.models.signals import *
 from .models import User, Profile, Follow, Block
 from django.dispatch import receiver
 from notifications_app.tasks import delete_notifications
-from .tasks import delete_following_relation, notifying_following, create_user_profile
+from .tasks import (
+    delete_following_relation,
+    notifying_following,
+    create_user_profile,
+    send_activation,
+)
 
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
         create_user_profile.delay(instance.id)
+
+
+@receiver(post_save, sender=User)
+def send_email_activation(instance, created, **kwargs):
+    if created and not instance.is_active:
+        data = {"email": instance.email}
+        send_activation.delay(data)
 
 
 @receiver(pre_save, sender=Follow)
