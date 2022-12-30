@@ -12,6 +12,8 @@ from drf_spectacular.views import (
 from rest_framework import permissions
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 
 urlpatterns = [
@@ -32,9 +34,8 @@ urlpatterns = [
         "api/v1/",
         include(
             [
-                path("users/", include("users_app.urls")),
+                path("", include("users_app.urls")),
                 path("posts/", include("posts_app.urls")),
-                path("chats/", include("chats_app.urls")),
                 path("notifications/", include("notifications_app.urls")),
                 path("api-auth/", include("rest_framework.urls")),
             ]
@@ -42,3 +43,5 @@ urlpatterns = [
     ),
     path("", include("django_prometheus.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+urlpatterns += staticfiles_urlpatterns()

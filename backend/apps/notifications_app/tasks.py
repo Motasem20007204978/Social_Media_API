@@ -1,5 +1,4 @@
 from __future__ import absolute_import, unicode_literals
-from re import T
 from celery import shared_task
 from django.core.management import call_command
 from .models import Notification
@@ -35,20 +34,30 @@ def create_notification(sender_id, receiver_id, options: dict = None):
     return f"notification created"
 
 
-channel_layer = get_channel_layer()
-
-
 @shared_task(name="send_notifications")
-def send_notification(notif_id):
-    notification = Notification.objects.get(id=notif_id)
-    async_to_sync(channel_layer.group_send)(
-        "notifications", {"type": "notifications.notification", "text": ""}
-    )
-    ...
+def send_client_notification(notif_id):
+    notif = Notification.objects.get(id=notif_id)
+    channel_layer = get_channel_layer()
+    payload = {
+        "notification_id": str(notif.id),
+        "sender_id": str(notif.sender.id),
+        "data": notif.data,
+        "is_read": notif.seen,
+    }
+    async_to_sync(channel_layer.group_send)(notif.receiver.id.hex, payload)
+    return "notification sent successfully"
 
 
 @shared_task(name="delete_instance_notification")
 def delete_notifications(obj_id, search_word: str):
     notifications = Notification.objects.filter(data__contains={search_word: obj_id})
     notifications.delete()
-    ...
+
+
+@shared_task(name="delete_from_client_side")
+def delete_notification_client_side(notif_id, client_id):
+    channel = get_channel_layer()
+    async_to_sync(channel.group_send)(
+        client_id, {"action": "delete", "notification_id": notif_id}
+    )
+    return "notification sent successfully"

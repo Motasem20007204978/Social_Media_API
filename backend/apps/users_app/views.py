@@ -1,7 +1,9 @@
 from rest_framework.response import Response
+from rest_framework.generics import GenericAPIView
 from rest_framework.generics import (
     CreateAPIView,
     ListCreateAPIView,
+    ListAPIView,
     get_object_or_404,
     RetrieveUpdateDestroyAPIView,
     DestroyAPIView,
@@ -21,8 +23,7 @@ from .models import Block
 from users_app.models import Follow
 from .serializers import (
     FollowSerializer,
-    GoogleLoginSerializer,
-    RegisterSerializer,
+    BasicDataSerializer,
     LoginSerializer,
     ChangePasswordSerializer,
     EmailSerializer,
@@ -46,6 +47,11 @@ class ListUsers(PageNumberPagination):
     page_size = 10
 
 
+class AbstractAPIView(GenericAPIView):
+    serializer_class = BasicDataSerializer
+    queryset = User.objects.all()
+
+
 @extend_schema_view(
     get=extend_schema(
         tags=["Search Users"],
@@ -61,32 +67,10 @@ class ListUsers(PageNumberPagination):
             ),
         ],
     ),
-    post=extend_schema(
-        tags=["Auth"],
-        operation_id="Register",
-        description="takes user data and stores it, then returns a message ensures that the registration successful if the data valid",
-        responses={
-            200: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                examples=[
-                    OpenApiExample(
-                        name="Registering User Response",
-                        value={
-                            "message": "registration success, check your email to verify account"
-                        },
-                    ),
-                ],
-            ),
-        },
-    ),
 )
-class ListRegisterUserView(ListCreateAPIView):
-
-    permission_classes = [AllowAny]
-    serializer_class = RegisterSerializer
-    queryset = User.objects.all()
+class ListUsersView(AbstractAPIView, ListAPIView):
     pagination_class = ListUsers
-    http_method_names = ["get", "post"]
+    http_method_names = ["get"]
 
     def get_queryset(self):
         filters = self.request.GET.dict()
@@ -106,10 +90,6 @@ class ListRegisterUserView(ListCreateAPIView):
         queryset = queryset.exclude(username__in=usernames)
         return queryset
 
-    def perform_authentication(self, request):
-        if not request.user.is_authenticated:
-            return self.permission_denied(request)
-
     @method_decorator(cache_page(timeout=60 * 60 * 24, key_prefix="get-users"))
     @method_decorator(
         vary_on_headers(
@@ -117,8 +97,32 @@ class ListRegisterUserView(ListCreateAPIView):
         )
     )
     def get(self, request, *args, **kwargs):
-        self.perform_authentication(request)
         return super().get(request, *args, **kwargs)
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["auth"],
+        operation_id="Register",
+        description="takes user data and stores it, then returns a message ensures that the registration successful if the data valid",
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                examples=[
+                    OpenApiExample(
+                        name="Registering User Response",
+                        value={
+                            "message": "registration success, check your email to verify account"
+                        },
+                    ),
+                ],
+            ),
+        },
+    ),
+)
+class RegisterAPIView(AbstractAPIView, CreateAPIView):
+    permission_classes = [AllowAny]
+    http_method_names = ["post"]
 
     def post(self, request):
         super().post(request)
@@ -156,6 +160,8 @@ class ResetEmailVerification(EmailActivationData):
     )
     def post(self, request):
         super().post(request)
+        data = {"email": request.data["email"]}
+        send_activation.delay(data)
         return Response({"messaga": "check your email"}, status=200)
 
 
@@ -204,7 +210,7 @@ class VerifyEmail(GenericAPIView):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["Auth"],
+        tags=["auth"],
         operation_id="Login",
         description="takes user credentials (email and password) and returns login data if the credentials is valid",
     )
@@ -213,22 +219,6 @@ class LoginView(TokenObtainPairView):
 
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
-
-
-@extend_schema_view(
-    post=extend_schema(
-        tags=["Auth"],
-        operation_id="Login with google",
-        description="takes google credentials and returns login data if the credentials is valid",
-    )
-)
-class LoginWithGoogleView(CreateAPIView):
-
-    serializer_class = GoogleLoginSerializer
-    permission_classes = [AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
 
 
 @extend_schema_view(
@@ -405,9 +395,10 @@ class FollowView(DestroyAPIView, CreateAPIView):
         return target
 
     def get_object(self):
-        return get_object_or_404(
+        obj = get_object_or_404(
             Follow, from_user=self.request.user, to_user=self.target
         )
+        return obj
 
 
 @extend_schema_view(
@@ -429,7 +420,7 @@ class BlockView(FollowView):
         )
 
 
-@extend_schema_view(post=extend_schema(tags=["Auth"], operation_id="refresh"))
+@extend_schema_view(post=extend_schema(tags=["auth"], operation_id="refresh"))
 class RefreshAccess(TokenRefreshView):
     ...
 

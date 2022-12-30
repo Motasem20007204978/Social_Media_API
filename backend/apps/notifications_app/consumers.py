@@ -1,23 +1,33 @@
 from channels.generic.websocket import WebsocketConsumer
 import json
+from channels.exceptions import DenyConnection
 from asgiref.sync import async_to_sync
 
 
 class NotificationConsumer(WebsocketConsumer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['username']
-        self.room_group_name = self.room_name
-        async_to_sync(self.channel_layer.group_add)("notifications", self.channel_name)
+        if self.scope["user"].is_anonymous:
+            raise DenyConnection("Invalid user")
+
+        self.user = self.scope["user"]
+        self.group_name = str(self.user.id.hex)
+        async_to_sync(self.channel_layer.group_add)(self.group_name, self.channel_name)
         self.accept()
 
-    def disconnect(self, close_code):
-        async_to_sync(self.channel_layer.group_discard)(
-            "notifications", self.channel_name
-        )
-
     def receive(self, text_data=None, bytes_data=None):
-
+        print(text_data)
+        self.send(text_data)
         return super().receive(text_data, bytes_data)
+
+    def disconnect(self, close_code=None):
+        async_to_sync(self.channel_layer.group_discard)(
+            self.group_name, self.channel_name
+        )
+        pass
+
+    def send_notification(self, payload):
+        self.send(text_data=json.dumps(payload))
+
+    def delete_notifications(self, event):
+        notif_id = event.get("notif_id")
+        self.send(text_data={"action": "delete", "notification_id": notif_id})

@@ -40,6 +40,7 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 # Application definition
 
 DEFAULT_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -65,7 +66,6 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "users_app.apps.UsersAppConfig",
     "posts_app.apps.PostsAppConfig",
-    "chats_app.apps.ChatsAppConfig",
     "notifications_app.apps.NotificationsAppConfig",
 ]
 
@@ -174,7 +174,6 @@ SPECTACULAR_SETTINGS = {
     },
     "SORT_OPERATIONS": False,
     "SORT_OPERATION_PARAMETERS": False,
-    # 'TAGS': ['users'],
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "SERVERS": [
         {"url": "http://localhost:5000", "description": "API Server"},
@@ -198,6 +197,12 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
+    "SWAGGER_UI_SETTINGS": {
+        "url": "/schema",  # relative path
+        "deepLinking": True,
+        "persistAuthorization": True,
+        "displayOperationId": True,
+    },
 }
 
 SIMPLE_JWT = {
@@ -236,9 +241,15 @@ SESSION_CACHE_ALIAS = "default"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [("redis://", 6379)]},
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+            "symmetric_encryption_keys": [SECRET_KEY],
+        },
     }
 }
+
+
+WSGI_APPLICATION = "social_media_project.wsgi.application"
 
 ASGI_APPLICATION = "social_media_project.routing.application"
 
@@ -272,6 +283,17 @@ EMAIL_HOST_PASSWORD = config("EMAIL_PW")
 DEFAULT_FROM_EMAIL = "noreply<no_reply@domain.com>"
 
 
+# Social Media Configs
+GOOGLE_CLIENT_KEY = config("GOOGLE_CLIENT_KEY")
+GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
+GOOGLE_CALLBACK_URI = "http://localhost:5000/api/v1/google/callback"
+
+TWITTER_CLIENT_KEY = config("TWITTER_CLIENT_KEY")
+TWITTER_CLIENT_SECRET = config("TWITTER_CLIENT_SECRET")
+TWITTER_CALLBACK_URI = "http://localhost:5000/api/v1/twitter/callback"
+
+LOGIN_WITH_SOCIAL_MEDIA_PASS = config("LOGIN_WITH_SOCIAL_MEDIA_PASS")
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -289,6 +311,7 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "static"
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "assets", "static")]
 # to collect static files in host machine
 # cammoand: python manage.py collectstatic
 

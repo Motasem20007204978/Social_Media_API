@@ -1,6 +1,7 @@
 from celery import shared_task
 from .models import Comment, Like, Post
 from notifications_app.tasks import create_notification
+from rest_framework.generics import get_object_or_404
 
 
 @shared_task(name="delete_likes")
@@ -9,26 +10,32 @@ def delete_likes(cid, ct):
     rel_likes.delete()
 
 
+from multiprocessing import Pool
+
+
 @shared_task(name="create_post_notifications")
 def notifying_post(instance_id):
-    instance = Post.objects.get(id=instance_id)
-    for follow_relation in instance.user.followers.all():
-        data = {
-            "sender_id": instance.user.id,
-            "receiver_id": follow_relation.from_user.id,
-            "options": {
-                "message": f"user {instance.user.full_name} posted on timeline",
-                "user_username": instance.user.username,
-                "post_id": instance.id,
-            },
-        }
+    instance = get_object_or_404(Post, id=instance_id)
+    with Pool(processes=1) as pool:
+        for follow_relation in instance.user.followers.all():
+            data = {
+                "sender_id": instance.user.id,
+                "receiver_id": follow_relation.from_user.id,
+                "options": {
+                    "message": f"user {instance.user.full_name} posted on timeline",
+                    "user_username": instance.user.username,
+                    "post_id": instance.id,
+                },
+            }
+            results = [pool.apply_async(create_notification, kwds={**data})]
 
-        create_notification.delay(**data)
+        for result in results:
+            result.get()
 
 
 @shared_task(name="create_comment_notifications")
 def notifying_comment(instance_id):
-    instance = Comment.objects.get(id=instance_id)
+    instance = get_object_or_404(Comment, id=instance_id)
     # notify comment's user
     receiver = instance.parent.user if instance.parent else instance.post.user
     data = {
@@ -47,7 +54,7 @@ def notifying_comment(instance_id):
 
 @shared_task(name="create_like_notifications")
 def notifying_like(instance_id, provider):
-    instance = Like.objects.get(id=instance_id)
+    instance = get_object_or_404(Like, id=instance_id)
     if provider == "post":
         related_obj = Post.objects.get(id=instance.object_id)
         receiver = related_obj.user

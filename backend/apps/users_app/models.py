@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from .validators import is_real_email, username_validator, name_validator
+from .validators import username_validator, name_validator
 from django.utils.translation import gettext_lazy as _
 from posts_app.path_generation import PathAndRename, uuid4
 from rest_framework.exceptions import ValidationError
@@ -35,7 +35,6 @@ class User(AbstractUser):
         unique=True,
         verbose_name="email address",
     )
-
     first_name = models.CharField(
         _("first name"),
         max_length=30,
@@ -46,6 +45,26 @@ class User(AbstractUser):
         max_length=30,
         validators=[name_validator],
     )
+    profile_pic = models.ImageField(
+        upload_to=PathAndRename("profile_pic/"),
+        blank=True,
+        null=True,
+        verbose_name="profile picture",
+        default="default-image.jpg",
+    )
+    birth_date = models.DateField(null=True, blank=True)
+    CHOICES = [("undefined", "-----"), ("male", "male"), ("female", "female")]
+    gender = models.CharField(
+        max_length=10,
+        choices=CHOICES,
+        default="undefined",
+    )
+    bio = models.TextField(
+        blank=True,
+        verbose_name="short description",
+        null=True,
+        help_text="write short description about your self",
+    )
     is_active = models.BooleanField(
         _("active"),
         default=False,
@@ -53,6 +72,11 @@ class User(AbstractUser):
             "Designates whether this user should be treated as active. "
             "Unselect this instead of deleting accounts."
         ),
+    )
+    is_online = models.BooleanField(
+        _("online"),
+        default=False,
+        help_text=_("Designater whether user is online or not to use in websocket"),
     )
     objects = Manager()
     updated_at = ModificationDateTimeField(_("updated at"))
@@ -189,36 +213,3 @@ class Block(Common):
             return super().validate_unique(**kwargs)
         except:
             raise ValidationError("cannot block the already blocked user")
-
-
-class Profile(models.Model):
-    user = models.OneToOneField(
-        User,
-        primary_key=True,
-        on_delete=models.CASCADE,
-        related_name="profile",
-    )
-    profile_pic = models.ImageField(
-        upload_to=PathAndRename("profile_pic/"),
-        blank=True,
-        null=True,
-        verbose_name="profile picture",
-        default="default-image.jpg",
-    )
-    birth_date = models.DateField(null=True, blank=True)
-    CHOICES = [("undefined", "-----"), ("male", "male"), ("female", "female")]
-    gender = models.CharField(
-        max_length=10,
-        choices=CHOICES,
-        default="undefined",
-    )
-
-    bio = models.TextField(
-        blank=True,
-        verbose_name="short description",
-        null=True,
-        help_text="write short description about your self",
-    )
-
-    class Meta:
-        db_table = "porfiles_db"

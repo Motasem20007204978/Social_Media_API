@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Follow, Profile, User, Block
+from .models import Follow, User, Block
 from .utils import get_user_from_uuid
 from drf_spectacular.utils import (
     extend_schema_serializer,
@@ -45,15 +45,6 @@ class RelatedBlockings(RelatedFollowings):
     ...
 
 
-class NestedProfileSerializer(serializers.ModelSerializer):
-
-    profile_pic = Base64ImageField()
-
-    class Meta:
-        model = Profile
-        exclude = ("user",)
-
-
 fields_representation = {
     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     "username": "stirng",
@@ -61,12 +52,10 @@ fields_representation = {
     "first_name": "string",
     "last_name": "string",
     "full_name": "string",
-    "profile": {
-        "profile_pic": "example.com/media/profile_pictires/pic.jpg",
-        "birth_date": "2000-03-23",
-        "gender": "male",
-        "bio": "string",
-    },
+    "profile_pic": "example.com/media/profile_pictires/pic.jpg",
+    "birth_date": "2000-03-23",
+    "gender": "male",
+    "bio": "string",
     "followers_count": 44,
     "followers": [OBJECT],
     "followings_count": 22,
@@ -104,7 +93,6 @@ class ProfileSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
 
     followers = RelatedFollowers(many=True, read_only=True)
     followings = RelatedFollowings(many=True, read_only=True)
-    profile = NestedProfileSerializer()
     blockers = RelatedBlockers(many=True, read_only=True)
     blockings = RelatedBlockings(many=True, read_only=True)
 
@@ -117,7 +105,10 @@ class ProfileSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
             "first_name",
             "last_name",
             "full_name",
-            "profile",
+            "gender",
+            "birth_date",
+            "profile_pic",
+            "bio",
             "followers_count",
             "followers",
             "followings_count",
@@ -152,7 +143,7 @@ class PasswordField(serializers.CharField):
         super().__init__(**kwargs)
 
 
-class RegisterSerializer(QueryFieldsMixin, serializers.ModelSerializer):
+class BasicDataSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     password = PasswordField()
 
@@ -256,55 +247,6 @@ class LoginSerializer(TokenObtainPairSerializer):
             "name": self.user.full_name,
             "email": self.user.email,
         }
-        return data
-
-
-from .google_auth import google_login_data
-from django.utils.crypto import get_random_string
-from decouple import config
-
-
-@extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            name="google login",
-            value=login_response,
-            response_only=True,
-            status_codes=[201],
-        )
-    ],
-)
-class GoogleLoginSerializer(serializers.Serializer):
-    def login(self, data):
-        serializer = LoginSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        return serializer.validated_data
-
-    def to_representation(self, instance):
-        data = {
-            "email": instance.email,
-            "password": config("LOGIN_WITH_SOCIAL_MEDIA_PASS"),
-        }
-        return self.login(data)
-
-    def create(self, validated_data):
-        user = User.objects.filter(email=validated_data["email"])
-        if user:
-            return user[0]
-
-        data = {
-            "provider": "google",
-            "username": get_random_string(20),
-            "email": validated_data["email"],
-            "first_name": validated_data["given_name"],
-            "last_name": validated_data["family_name"],
-            "password": config("LOGIN_WITH_SOCIAL_MEDIA_PASS"),
-        }
-        user = User.objects.create_social_user(**data)
-        return user
-
-    def validate(self, attrs):
-        data = google_login_data()
         return data
 
 

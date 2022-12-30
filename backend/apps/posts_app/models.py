@@ -51,7 +51,7 @@ class Like(models.Model):
 
     TYPES = [("post", "post"), ("comment", "comment")]
     content_type = models.CharField(max_length=10, choices=TYPES)
-    object_id = models.UUIDField(editable=False)
+    object_id = models.UUIDField()
 
     def validate_unique(self, *args, **kwargs) -> None:
         try:

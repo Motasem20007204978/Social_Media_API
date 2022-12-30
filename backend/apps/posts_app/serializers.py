@@ -1,14 +1,10 @@
-from rest_framework import serializers
-from .models import Attachment, Post, Comment, Like
-from rest_framework.generics import get_object_or_404
-from drf_writable_nested.serializers import WritableNestedModelSerializer
+from .models import Attachment, Comment, Like, Post
 from drf_base64.fields import Base64FileField
-from drf_spectacular.utils import (
-    extend_schema_serializer,
-    OpenApiExample,
-)
 from drf_queryfields.mixins import QueryFieldsMixin
-
+from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
+from drf_writable_nested.serializers import WritableNestedModelSerializer
+from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 
 user_representation = {
     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -24,7 +20,7 @@ class RelatedUser(serializers.RelatedField):
             "id": value.id,
             "username": value.username,
             "full_name": value.full_name,
-            "picture": value.profile.profile_pic.url,
+            "picture": value.profile_pic.url,
         }
         return bostedBy
 

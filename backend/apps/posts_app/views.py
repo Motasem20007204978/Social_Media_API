@@ -1,5 +1,3 @@
-from os import stat
-from time import perf_counter
 from urllib import request
 from .serializers import *
 from rest_framework.generics import (
@@ -20,6 +18,7 @@ from django.contrib.auth import get_user_model
              to check if it exists as a user's username, then return the obtained user's posts.\
                 but if the user is blocked, you cannot get his posts",
         operation_id="list posts",
+        tags=["posts"],
         parameters=[
             OpenApiParameter(
                 name="username",
@@ -33,8 +32,7 @@ from django.contrib.auth import get_user_model
         ],
     ),
     post=extend_schema(
-        operation_id="Create Post",
-        description="Create a Post",
+        operation_id="Create Post", description="Create a Post", tags=["posts"]
     ),
 )
 class PostsView(ListCreateAPIView):
@@ -111,6 +109,7 @@ class RetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
     get=extend_schema(
         description="get home posts or a user's posts",
         operation_id="get post by id",
+        tags=["modify-post"],
         parameters=[
             OpenApiParameter(
                 name="fields",
@@ -119,12 +118,10 @@ class RetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
         ],
     ),
     patch=extend_schema(
-        operation_id="Patch Post",
-        description="Patch a Post",
+        operation_id="Patch Post", description="Patch a Post", tags=["modify_post"]
     ),
     delete=extend_schema(
-        operation_id="Delete Post",
-        description="Delete a Post",
+        operation_id="Delete Post", description="Delete a Post", tags=["modify_post"]
     ),
 )
 class PostDetailView(RetrieveUpdateDestroy):
@@ -155,6 +152,7 @@ class PostDetailView(RetrieveUpdateDestroy):
     get=extend_schema(
         operation_id="likes details",
         description="list of details for likes related to a post, a comment, or a reply",
+        tags=["likes"],
         parameters=[
             OpenApiParameter(
                 name="post_id", description="get likes by post id", type=str
@@ -170,6 +168,7 @@ class PostDetailView(RetrieveUpdateDestroy):
     post=extend_schema(
         operation_id="like object",
         description="like a post, comment, or a reply",
+        tags=["likes"],
         parameters=[
             OpenApiParameter(
                 name="post_id", description="like a post by post id", type=str
@@ -185,6 +184,7 @@ class PostDetailView(RetrieveUpdateDestroy):
     delete=extend_schema(
         operation_id="ullike object",
         description="takes the first id obtained and unlike a post, comment or reply",
+        tags=["likes"],
         parameters=[
             OpenApiParameter(
                 name="post_id", description="dislike a post by post id", type=str
@@ -259,6 +259,7 @@ class LikeView(ListCreateAPIView, DestroyAPIView):
     get=extend_schema(
         operation_id="get comments",
         description="get comments for a post",
+        tags=["comments-replies"],
         parameters=[
             OpenApiParameter(
                 name="comment_id", description="get replies for a comment", type=str
@@ -270,6 +271,7 @@ class LikeView(ListCreateAPIView, DestroyAPIView):
         description="if a comment_id (optional) is obtaied it takes it and make the request as a reply for this comment, \
             then returns response with parent field based on that parent is the obtained comment, \
                 otherwise it takes post id and make the request as a comment without parent field",
+        tags=["comments-replies"],
         parameters=[
             OpenApiParameter(
                 name="comment_id",
@@ -314,12 +316,17 @@ class CommentPostView(ListCreateAPIView):
     get=extend_schema(
         operation_id="Comment Details",
         description="get details for a comment or a reply by id",
+        tags=["modify-comments-replies"],
     ),
     patch=extend_schema(
-        operation_id="Patch a Comment", description="patch comment or reply"
+        operation_id="Patch a Comment",
+        description="patch comment or reply",
+        tags=["modify-comments-replies"],
     ),
     delete=extend_schema(
-        operation_id="Delete Comment", description="delete comment or reply by id"
+        operation_id="Delete Comment",
+        description="delete comment or reply by id",
+        tags=["modify-comments-replies"],
     ),
 )
 class ModifyComment(RetrieveUpdateDestroy):

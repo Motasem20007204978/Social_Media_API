@@ -1,26 +1,20 @@
 from django.db.models.signals import *
-from .models import User, Profile, Follow, Block
+from .models import User, Follow, Block
 from django.dispatch import receiver
 from notifications_app.tasks import delete_notifications
 from .tasks import (
     delete_following_relation,
     notifying_following,
-    create_user_profile,
     send_activation,
 )
-
-
-@receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
-    if created:
-        create_user_profile.delay(instance.id)
+from django.db import transaction
 
 
 @receiver(post_save, sender=User)
 def send_email_activation(instance, created, **kwargs):
     if created and not instance.is_active:
         data = {"email": instance.email}
-        send_activation.delay(data)
+        transaction.on_commit(lambda: send_activation.delay(data))
 
 
 @receiver(pre_save, sender=Follow)
@@ -34,14 +28,15 @@ def check_self_following(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Block)
-def unfollow(sender, instance, **kwargs):
-    delete_following_relation.delay(instance.id)
+def unfollow(created, instance, **kwargs):
+    if created:
+        transaction.on_commit(lambda: delete_following_relation.delay(instance.id))
 
 
 @receiver(post_save, sender=Follow)
 def notify_followed_user(sender, created, instance, **kwargs):
     if created:
-        notifying_following.delay(instance.id)
+        transaction.on_commit(lambda: notifying_following.delay(instance.id))
 
 
 @receiver(post_delete, sender=Follow)

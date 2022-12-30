@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Follow, Profile, Block
+from .models import User, Follow, Block
 
 # Register your models here.
 
@@ -30,15 +30,4 @@ class FollowAdmin(admin.ModelAdmin):
     search_fields = ["from_user", "to_user"]
     list_display_links = ["from_user", "to_user"]
     list_per_page = 10
-    ...
-
-
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ["user", "gender", "created_at"]
-    list_filter = ["gender"]
-
-    def created_at(self, obj):
-        return obj.user.date_joined
-
     ...

@@ -25,7 +25,7 @@ services:
      sh -c "python manage.py makemigrations &&
             python manage.py waitfordb &&
             python manage.py migrate &&
-            python manage.py runserver 0.0.0.0:5000"
+            gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 social_media_project.asgi:application"
     volumes:
       - ./backend:/social_media_project/ #get the real-time updates that we makes it to the project into the image
     ports:
@@ -77,7 +77,7 @@ services:
   flower:
     image: mher/flower
     container_name: flower
-    command: celery flower --persisten=True 
+    command: celery flower --auth=motasemalmobayyed@gmail.com --persisten=True 
     # persist our data in flower so that it didn’t go away on every restart of container 
     ports:
       - 5555:5555
@@ -99,16 +99,7 @@ services:
       - flower
     network_mode: host
 
-networks:
-  db: 
-    driver: host
-  net:
-    driver: host
-  monitoring:
-    driver: host
-
 volumes:
   db: 
   redis:
   web:
-  prometheus_data: {}

@@ -1,31 +1,55 @@
 from django.urls import path
-
 from .views import *
+from .social_auth_views import *
 
 urlpatterns = [
-    path("", ListRegisterUserView.as_view(), name="user-list-create"),
+    path("register", RegisterAPIView.as_view(), name="user-create"),
     path(
-        "email/reset-activation-link/",
+        "email/activation/reset",
         ResetEmailVerification.as_view(),
         name="reset-email-activation",
     ),
     path(
-        "email/activate/<str:uuid>/<str:token>/",
+        "user/<str:uuid>/<str:token>/activate",
         VerifyEmail.as_view(),
-        name="activate-email",
+        name="activate-user",
     ),
-    path("signin", LoginView.as_view(), name="signin-user"),
-    path("login-with-google", LoginWithGoogleView.as_view(), name="google-login"),
-    path("refresh", RefreshAccess.as_view(), name="refresh-access"),
     path("password/forgot", ForgetPassowrd.as_view(), name="forget-password"),
     path(
-        "password/reset/<str:uuid>/<str:token>",
+        "password/<str:uuid>/<str:token>/reset",
         ResetPassword.as_view(),
         name="reset-password",
     ),
+    path("login", LoginView.as_view(), name="signin-user"),
+    path(
+        "google/login",
+        LoginGoogleAPIView.as_view(),
+        name="google-login",
+    ),
+    path(
+        "google/callback",
+        LoginGoogleCallbackAPIView.as_view(),
+        name="google-callback",
+    ),
+    path(
+        "twitter/login",
+        LoginTwitterView.as_view(),
+        name="twitter-login",
+    ),
+    path(
+        "twitter/callback",
+        LoginTwitterCallbackView.as_view(),
+        name="twitter-callback",
+    ),
+    path("token/refresh", RefreshAccess.as_view(), name="refresh-access"),
+    path("users/list", ListUsersView.as_view(), name="search-users"),
+    path(
+        "user/<str:username>/information",
+        ProfileView.as_view(),
+        name="user-info",
+    ),
     path("password/change", ChangePasswordView.as_view(), name="change-password"),
-    path("logout", Logout.as_view(), name="logout"),
-    path("<str:username>", ProfileView.as_view(), name="user-info"),
     path("following/<str:username>", FollowView.as_view(), name="following"),
     path("blocking/<str:username>", BlockView.as_view(), name="blocking"),
+    path("logout", Logout.as_view(), name="logout"),
 ]
