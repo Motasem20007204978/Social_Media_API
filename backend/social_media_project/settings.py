@@ -139,14 +139,14 @@ WSGI_APPLICATION = "social_media_project.wsgi.application"
 
 DATABASES = {
     "default": {
-        # "ENGINE": "django.db.backends.sqlite3",
-        # "NAME": BASE_DIR / "db.sqlite3",
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": "localhost",
-        "PORT": 5432,
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+        # "ENGINE": "django.db.backends.postgresql",
+        # "NAME": config("DB_NAME"),
+        # "USER": config("DB_USER"),
+        # "PASSWORD": config("DB_PASSWORD"),
+        # "HOST": "localhost",
+        # "PORT": 5432,
     }
 }
 
@@ -174,9 +174,9 @@ SPECTACULAR_SETTINGS = {
     },
     "SORT_OPERATIONS": False,
     "SORT_OPERATION_PARAMETERS": False,
-    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
+    "SCHEMA_PATH_PREFIX": r"/api/apps/",
     "SERVERS": [
-        {"url": "http://localhost:5000", "description": "API Server"},
+        {"url": "http://localhost", "description": "API Server"},
         {
             "url": "http://localhost:5555",
             "description": "Flower Server For Executed Tasks",
@@ -286,11 +286,11 @@ DEFAULT_FROM_EMAIL = "noreply<no_reply@domain.com>"
 # Social Media Configs
 GOOGLE_CLIENT_KEY = config("GOOGLE_CLIENT_KEY")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
-GOOGLE_CALLBACK_URI = "http://localhost:5000/api/v1/google/callback"
+GOOGLE_CALLBACK_URI = "http://localhost:5000/api/apps/google/callback"
 
 TWITTER_CLIENT_KEY = config("TWITTER_CLIENT_KEY")
 TWITTER_CLIENT_SECRET = config("TWITTER_CLIENT_SECRET")
-TWITTER_CALLBACK_URI = "http://localhost:5000/api/v1/twitter/callback"
+TWITTER_CALLBACK_URI = "http://localhost/api/apps/twitter/callback"
 
 LOGIN_WITH_SOCIAL_MEDIA_PASS = config("LOGIN_WITH_SOCIAL_MEDIA_PASS")
 
@@ -311,7 +311,6 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "static"
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "assets", "static")]
 # to collect static files in host machine
 # cammoand: python manage.py collectstatic
 

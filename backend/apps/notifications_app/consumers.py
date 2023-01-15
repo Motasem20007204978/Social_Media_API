@@ -10,7 +10,7 @@ class NotificationConsumer(WebsocketConsumer):
             raise DenyConnection("Invalid user")
 
         self.user = self.scope["user"]
-        self.group_name = str(self.user.id.hex)
+        self.group_name = str(self.user.username)
         async_to_sync(self.channel_layer.group_add)(self.group_name, self.channel_name)
         self.accept()
 
@@ -28,6 +28,7 @@ class NotificationConsumer(WebsocketConsumer):
     def send_notification(self, payload):
         self.send(text_data=json.dumps(payload))
 
-    def delete_notifications(self, event):
-        notif_id = event.get("notif_id")
-        self.send(text_data={"action": "delete", "notification_id": notif_id})
+    def delete_notification(self, event):
+        notif_id = event.get("notification_id")
+        payload = json.dumps({"action": "delete", "notification_id": notif_id})
+        self.send(text_data=payload)

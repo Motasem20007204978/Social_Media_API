@@ -5,8 +5,13 @@ from .models import Notification
 from django.contrib.auth import get_user_model
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+import asyncio
 
 User = get_user_model()
+channel_layer = get_channel_layer()
+# to solve error -> raise RuntimeError('Event loop is closed')
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 
 @shared_task(name="clear_read_notifications")
@@ -37,14 +42,15 @@ def create_notification(sender_id, receiver_id, options: dict = None):
 @shared_task(name="send_notifications")
 def send_client_notification(notif_id):
     notif = Notification.objects.get(id=notif_id)
-    channel_layer = get_channel_layer()
+
     payload = {
+        "type": "send.notification",
         "notification_id": str(notif.id),
         "sender_id": str(notif.sender.id),
         "data": notif.data,
         "is_read": notif.seen,
     }
-    async_to_sync(channel_layer.group_send)(notif.receiver.id.hex, payload)
+    async_to_sync(channel_layer.group_send)(notif.receiver.username, payload)
     return "notification sent successfully"
 
 
@@ -55,9 +61,12 @@ def delete_notifications(obj_id, search_word: str):
 
 
 @shared_task(name="delete_from_client_side")
-def delete_notification_client_side(notif_id, client_id):
-    channel = get_channel_layer()
-    async_to_sync(channel.group_send)(
-        client_id, {"action": "delete", "notification_id": notif_id}
+def delete_notification_client_side(notif_id, client_username):
+    async_to_sync(channel_layer.group_send)(
+        client_username,
+        {
+            "type": "delete.notification",  # necessary to select method in consumer class
+            "notification_id": notif_id,
+        },
     )
-    return "notification sent successfully"
+    return "delete notification alert is sent successfully"

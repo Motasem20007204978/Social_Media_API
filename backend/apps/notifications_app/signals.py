@@ -13,4 +13,8 @@ def send_notification(sender, created, instance, **kwargs):
 
 @receiver(post_delete, sender=Notification)
 def delete_from_client_side(instance, **kwargs):
-    delete_notification_client_side.delay(instance.id, instance.receiver.id)
+    transaction.on_commit(
+        lambda: delete_notification_client_side.delay(
+            instance.id, instance.receiver.username
+        )
+    )

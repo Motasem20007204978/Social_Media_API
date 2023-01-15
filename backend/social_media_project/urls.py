@@ -17,31 +17,32 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 
 urlpatterns = [
-    path("schema", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema", SpectacularAPIView.as_view(), name="schema"),
     # Optional UI:
     path(
-        "swagger-ui/",
+        "api/swagger-ui/",
         SpectacularSwaggerView.as_view(),
         name="swagger-ui",
     ),
     path(
-        "redoc/",
+        "api/redoc/",
         SpectacularRedocView.as_view(),
         name="redoc",
     ),
-    path("admin/", admin.site.urls),
+    path("api/admin/", admin.site.urls),
     path(
-        "api/v1/",
+        "api/apps/",
         include(
             [
-                path("", include("users_app.urls")),
                 path("posts/", include("posts_app.urls")),
                 path("notifications/", include("notifications_app.urls")),
+                path("", include("users_app.urls")),
                 path("api-auth/", include("rest_framework.urls")),
             ]
         ),
     ),
-    path("", include("django_prometheus.urls")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-urlpatterns += staticfiles_urlpatterns()
+    path("api/", include("django_prometheus.urls")),
+]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += staticfiles_urlpatterns()

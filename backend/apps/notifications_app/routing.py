@@ -4,7 +4,7 @@ from .consumers import NotificationConsumer
 
 websocket_urlpatterns = [
     path(
-        "ws/",
+        "api/notifs/ws",
         NotificationConsumer.as_asgi(),
         name="websocket-notif",
     )

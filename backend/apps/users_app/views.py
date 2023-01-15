@@ -54,7 +54,6 @@ class AbstractAPIView(GenericAPIView):
 
 @extend_schema_view(
     get=extend_schema(
-        tags=["Search Users"],
         description="takes username or fields and return users' data according to username or fields to be returned",
         operation_id="list users",
         parameters=[
@@ -102,7 +101,6 @@ class ListUsersView(AbstractAPIView, ListAPIView):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["auth"],
         operation_id="Register",
         description="takes user data and stores it, then returns a message ensures that the registration successful if the data valid",
         responses={
@@ -143,7 +141,6 @@ class EmailActivationData(CreateAPIView):
 
 class ResetEmailVerification(EmailActivationData):
     @extend_schema(
-        tags=["Email"],
         operation_id="reset verification",
         description="takes email and resends email activation link with uuid and token for the user",
         responses={
@@ -167,7 +164,6 @@ class ResetEmailVerification(EmailActivationData):
 
 @extend_schema_view(
     get=extend_schema(
-        tags=["Email"],
         operation_id="verify email",
         description="takes uuid and token to check and return a message ensures the successful verification process",
         responses={
@@ -210,7 +206,6 @@ class VerifyEmail(GenericAPIView):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["auth"],
         operation_id="Login",
         description="takes user credentials (email and password) and returns login data if the credentials is valid",
     )
@@ -223,7 +218,6 @@ class LoginView(TokenObtainPairView):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["Password"],
         operation_id="forget password",
         description="takes user's email and return a message enshure that is an activation link is sent to your email inbox to reset password",
         responses={
@@ -254,7 +248,6 @@ class ForgetPassowrd(EmailActivationData):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["Password"],
         operation_id="reset password",
         description="takes uuid and token from sent email as a parameters and check if the parameters is valid, then it takes new password to be reset to the users' account",
         responses={
@@ -283,7 +276,6 @@ class ResetPassword(CreateAPIView):
 
 @extend_schema_view(
     get=extend_schema(
-        tags=["Manage User"],
         operation_id="get user data",
         description="get user data by username_validator",
         parameters=[
@@ -294,7 +286,6 @@ class ResetPassword(CreateAPIView):
         ],
     ),
     patch=extend_schema(
-        tags=["Manage User"],
         operation_id="updata user data",
         description="update user data by username_validator, iff the authenticated user is the name's user",
         parameters=[
@@ -305,7 +296,6 @@ class ResetPassword(CreateAPIView):
         ],
     ),
     delete=extend_schema(
-        tags=["Manage User"],
         operation_id="delete user",
         description="takes username and delete the user, iff the authenticated user is the name's user",
         responses={
@@ -345,7 +335,6 @@ class ProfileView(RetrieveUpdateDestroyAPIView):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["Password"],
         operation_id="change password",
         description="takes the old password to check if it is correct for the curren person, and then reset the old with new password",
         responses={
@@ -374,12 +363,10 @@ class ChangePasswordView(CreateAPIView):
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["Following"],
         operation_id="follow a user",
         description="takes the username of user to be followed to make following process, and then returns the user following lists",
     ),
     delete=extend_schema(
-        tags=["Following"],
         operation_id="unfollow a user",
         description="takes the username of the user to be unfollowed to make unfollowing process",
     ),
@@ -404,10 +391,8 @@ class FollowView(DestroyAPIView, CreateAPIView):
 @extend_schema_view(
     post=extend_schema(
         operation_id="Block a User",
-        tags=["Blocking"],
     ),
     delete=extend_schema(
-        tags=["Blocking"],
         operation_id="Unblock a User",
     ),
 )
@@ -420,14 +405,13 @@ class BlockView(FollowView):
         )
 
 
-@extend_schema_view(post=extend_schema(tags=["auth"], operation_id="refresh"))
+@extend_schema_view(post=extend_schema(operation_id="refresh"))
 class RefreshAccess(TokenRefreshView):
     ...
 
 
 @extend_schema_view(
     post=extend_schema(
-        tags=["Manage User"],
         operation_id="logout",
         description="takes refresh token and blacklists it into blacklist table",
         responses={

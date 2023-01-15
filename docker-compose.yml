@@ -25,9 +25,11 @@ services:
      sh -c "python manage.py makemigrations &&
             python manage.py waitfordb &&
             python manage.py migrate &&
-            gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 social_media_project.asgi:application"
+            gunicorn -k uvicorn.workers.UvicornWorker social_media_project.asgi:application --bind 0.0.0.0:5000"
     volumes:
-      - ./backend:/social_media_project/ #get the real-time updates that we makes it to the project into the image
+      - ./backend:/webproject/ #get the real-time updates that we makes it to the project into the image
+      - static_volume:/webproject/static
+      - media_volume:/webproject/media
     ports:
       - "5000:5000"
     image: web:django # run the image with django tag
@@ -52,8 +54,6 @@ services:
     image: web:django
     restart: always # restart container automatically if it is stopped manually or fails
     command: celery -A social_media_project worker -l INFO # get information in terminal
-    volumes:
-      - ./backend:/social_media_project/
     depends_on:
       - database
       - redis
@@ -66,8 +66,6 @@ services:
     image: web:django
     restart: always
     command: celery -A social_media_project beat -l INFO
-    volumes:
-      - ./backend:/social_media_project/
     env_file:
       - ./.env
     depends_on:
@@ -77,7 +75,7 @@ services:
   flower:
     image: mher/flower
     container_name: flower
-    command: celery flower --auth=motasemalmobayyed@gmail.com --persisten=True 
+    command: celery flower --url-prefix=flower --auth=motasemalmobayyed@gmail.com --persisten=True 
     # persist our data in flower so that it didn’t go away on every restart of container 
     ports:
       - 5555:5555
@@ -96,10 +94,38 @@ services:
     volumes:
       - ./monitor.yml:/etc/prometheus/prometheus.yml
     depends_on:
-      - flower
+      - nginx-exporter
     network_mode: host
+
+  nginx:
+    build: nginx
+    container_name: nginx
+    ports:
+      - 5050:80
+    depends_on:
+      - flower
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volume:/static
+      - media_volume:/media
+    network_mode: host
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx_exporter
+    ports:
+      - 9113:9113
+    command: 
+      - -nginx.scrape-uri
+      - http://localhost/metrics
+    depends_on:
+      - nginx
+    network_mode: host  
+
 
 volumes:
   db: 
   redis:
   web:
+  static_volume:
+  media_volume:

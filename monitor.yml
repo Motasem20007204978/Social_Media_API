@@ -6,10 +6,17 @@ scrape_configs:
   - job_name: prometheus
     static_configs:
       - targets: ['localhost:9090']
+  - job_name: nginx
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['localhost:9113']
   - job_name: flower
+    metrics_path: /flower/metrics
     static_configs:
       - targets: ['localhost:5555'] #host in docker network
-  - job_name: web
+  - job_name: api
+    metrics_path: /api/metrics
     static_configs:
       - targets: ['localhost:5000'] #host in docker network
+
 
