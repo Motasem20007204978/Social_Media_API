@@ -1,9 +1,8 @@
 from __future__ import absolute_import, unicode_literals
-
+from django.urls import reverse
+from django.contrib.sites.models import Site
 from celery import shared_task
 import time
-from django.conf import settings
-from .utils import activation_url
 from rest_framework.generics import get_object_or_404
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
@@ -28,6 +27,14 @@ def delete_inactivated_users():
 @shared_task(name="delete_expired_tokens")
 def delete_expired_tokens():
     call_command(command_name="flushexpiredtokens")
+
+
+def activation_url(url_name, uuid64, token):
+    site = Site.objects.get_current()
+    current_domain = site.domain
+    relative_url = reverse(url_name, kwargs={"uuid": uuid64, "token": token})
+    actiavation_link = f"http://{current_domain}{relative_url}"
+    return actiavation_link
 
 
 @shared_task(name="send_email_activation")

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AbstractUser
 from .validators import username_validator, name_validator
 from django.utils.translation import gettext_lazy as _
@@ -10,6 +11,8 @@ from django.utils.encoding import smart_bytes
 from django_extensions.db.models import ModificationDateTimeField
 from .user_manager import Manager
 from django.contrib.auth.models import update_last_login
+from django.utils.http import urlsafe_base64_decode
+from rest_framework.generics import get_object_or_404
 
 # Create your models here.
 
@@ -18,7 +21,6 @@ class User(AbstractUser):
     # additional features
     PROVIDERS = [
         ("email", "email"),
-        ("facebook", "facebook"),
         ("google", "google"),
         ("twitter", "twitter"),
         ("github", "github"),
@@ -109,6 +111,12 @@ class User(AbstractUser):
             raise ValidationError("user password is incorrect")
         return True
 
+    @staticmethod
+    def get_user_from_uuid(uuid):
+        uid = urlsafe_base64_decode(uuid).decode()
+        user = get_object_or_404(User, id=uid)
+        return user
+
     def check_email_activation(self):
         if not self.is_active:
             raise ValidationError(
@@ -197,6 +205,13 @@ class Block(Common):
     to_user = ForeignUser(
         related_name="blockers",
     )
+
+    @staticmethod
+    def check_block_reation(source, target):
+        block_list = Block.objects.filter(
+            Q(from_user=source, to_user=target) | Q(from_user=target, to_user=source)
+        )
+        return block_list.exists()
 
     class Meta:
         unique_together = ["from_user", "to_user"]

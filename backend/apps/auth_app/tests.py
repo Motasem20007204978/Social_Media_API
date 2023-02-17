@@ -7,14 +7,14 @@ from django.utils.crypto import get_random_string
 
 class UserAuthTest(APITestCase, URLPatternsTestCase):
 
-    urlpatterns = [path("", include("users_app.urls"))]
+    urlpatterns = [path("auth/", include("auth_app.urls"))]
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.password = get_random_string(10)
 
     def test_create_account(self):
-        url = reverse(viewname="user-create")
+        url = reverse(viewname="user-list-create")
         data = {
             "username": "user_name",
             "email": "user@gmail.com",

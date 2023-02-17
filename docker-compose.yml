@@ -122,6 +122,15 @@ services:
       - nginx
     network_mode: host  
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    ports:
+      - 9187:9187
+    environment:
+      - DATA_SOURCE_NAME="postgresql://postgres:password@postgres:5432/shop?sslmode=disable"
+    depends_on:
+      - database
+    network_mode: host 
 
 volumes:
   db: 

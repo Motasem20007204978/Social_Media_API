@@ -1,18 +1,14 @@
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Follow, User, Block
-from .utils import get_user_from_uuid
 from drf_spectacular.utils import (
     extend_schema_serializer,
     OpenApiExample,
 )
-from drf_base64.fields import Base64ImageField
 from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_queryfields.mixins import QueryFieldsMixin
-from .utils import check_block_relation
-from rest_framework_simplejwt.settings import api_settings
 from rest_framework.exceptions import PermissionDenied
+from auth_app.serializers import PasswordField
 
 
 def repr_data(value):
@@ -134,15 +130,6 @@ class ProfileSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
         }
 
 
-class PasswordField(serializers.CharField):
-    def __init__(self, **kwargs):
-        kwargs["write_only"] = True
-        kwargs["max_length"] = 150
-        kwargs["style"] = {"input_type": "password"}
-        kwargs["trim_whitespace"] = False
-        super().__init__(**kwargs)
-
-
 class BasicDataSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     password = PasswordField()
@@ -183,90 +170,6 @@ class BasicDataSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         if attrs["password"] == attrs["again_pass"]:
             return super().validate(attrs)
         raise serializers.ValidationError("passwords are not be the same")
-
-
-class EmailSerializer(serializers.Serializer):
-    email = serializers.EmailField(label="email", write_only=True)
-
-    def create(self, validated_data):
-        return validated_data
-
-
-class ResetPasswordSerializer(serializers.Serializer):
-    password = PasswordField(label="new password")
-    pass_again = PasswordField(label="password again")
-
-    def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = validated_data.pop("user")
-        user.set_password(password)
-        user.update_login()
-        user.save()
-        return user
-
-    def validate(self, attrs):
-        if attrs["password"] != attrs["pass_again"]:
-            raise serializers.ValidationError("passowrds must be same")
-        request = self.context["request"]
-        user = get_user_from_uuid(request.resolver_match.kwargs["uuid"])
-        user.check_email_activation()
-        attrs["user"] = user
-        return attrs
-
-
-login_response = {
-    "refresh": "string",
-    "access": "string",
-    "refresh_token_timeout": 20000,
-    "access_token_timeout": 3600,
-    "user": {
-        "username": "string",
-        "name": "string",
-        "email": "string",
-    },
-}
-
-
-@extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            name="success login",
-            value=login_response,
-            response_only=True,
-            status_codes=[200],
-        )
-    ],
-)
-class LoginSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        data["refresh_token_timeout"] = api_settings.REFRESH_TOKEN_LIFETIME
-        data["access_token_timeout"] = api_settings.ACCESS_TOKEN_LIFETIME
-        data["user"] = {
-            "username": self.user.username,
-            "name": self.user.full_name,
-            "email": self.user.email,
-        }
-        return data
-
-
-class ChangePasswordSerializer(serializers.Serializer):
-    old_password = PasswordField(label="old password")
-    new_password = PasswordField(label="new passowrd")
-
-    def create(self, validated_data):
-        new_pass = validated_data.get("new_password", "")
-        request = self.context.get("request", "")
-        request.user.set_password(new_pass)
-        request.user.save()
-        return request.user
-
-    def validate(self, data):
-        request = self.context.get("request", "")
-        old_pass = data.get("old_password", "")
-        request.user.check_password(old_pass)
-        request.user.check_email_activation()
-        return data
 
 
 @extend_schema_serializer(
@@ -312,7 +215,7 @@ class FollowSerializer(serializers.ModelSerializer):
         username = request.resolver_match.kwargs.get("username")
         attrs["username"] = username
         receiver = get_object_or_404(User, username=username)
-        if check_block_relation(sender, receiver):
+        if Block.check_block_relation(sender, receiver):
             raise PermissionDenied(
                 "you connot follow this user because you have blocked him"
             )

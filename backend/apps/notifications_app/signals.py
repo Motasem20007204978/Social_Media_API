@@ -6,7 +6,7 @@ from django.db import transaction
 
 
 @receiver(signal=post_save, sender=Notification)
-def send_notification(sender, created, instance, **kwargs):
+def send_notification(created, instance, **kwargs):
     if created:
         transaction.on_commit(lambda: send_client_notification.delay(instance.id))
 

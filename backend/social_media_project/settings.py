@@ -40,7 +40,6 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 # Application definition
 
 DEFAULT_APPS = [
-    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -51,6 +50,7 @@ DEFAULT_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    "daphne",
     "rest_framework",
     "rest_framework_simplejwt",
     "drf_spectacular",
@@ -67,9 +67,10 @@ LOCAL_APPS = [
     "users_app.apps.UsersAppConfig",
     "posts_app.apps.PostsAppConfig",
     "notifications_app.apps.NotificationsAppConfig",
+    "auth_app.apps.AuthAppConfig",
 ]
 
-INSTALLED_APPS = LOCAL_APPS + DEFAULT_APPS + THIRD_PARTY_APPS
+INSTALLED_APPS = LOCAL_APPS + THIRD_PARTY_APPS + DEFAULT_APPS
 
 # customizing user model
 AUTH_USER_MODEL = "users_app.User"
@@ -174,18 +175,7 @@ SPECTACULAR_SETTINGS = {
     },
     "SORT_OPERATIONS": False,
     "SORT_OPERATION_PARAMETERS": False,
-    "SCHEMA_PATH_PREFIX": r"/api/apps/",
-    "SERVERS": [
-        {"url": "http://localhost", "description": "API Server"},
-        {
-            "url": "http://localhost:5555",
-            "description": "Flower Server For Executed Tasks",
-        },
-        {
-            "url": "http://localhost:9090",
-            "description": "Prometheus Server For Monitoring Requests",
-        },
-    ],
+    "SCHEMA_PATH_PREFIX": r"/api/v1/",
     "COMPONENT_SPLIT_REQUEST": True,
     "GENERIC_ADDITIONAL_PROPERTIES": "dict",
 }
@@ -286,11 +276,15 @@ DEFAULT_FROM_EMAIL = "noreply<no_reply@domain.com>"
 # Social Media Configs
 GOOGLE_CLIENT_KEY = config("GOOGLE_CLIENT_KEY")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
-GOOGLE_CALLBACK_URI = "http://localhost:5000/api/apps/google/callback"
+GOOGLE_CALLBACK_URI = "http://localhost:5000/api/v1/auth/google/callback"
 
 TWITTER_CLIENT_KEY = config("TWITTER_CLIENT_KEY")
 TWITTER_CLIENT_SECRET = config("TWITTER_CLIENT_SECRET")
-TWITTER_CALLBACK_URI = "http://localhost/api/apps/twitter/callback"
+TWITTER_CALLBACK_URI = "http://localhost:5000/api/v1/auth/twitter/callback"
+
+GITHUB_CLIENT_ID = config("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = config("GITHUB_CLIENT_SECRET")
+GITHUB_CALLBACK_URI = "http://localhost:5000/api/v1/auth/github/callback"
 
 LOGIN_WITH_SOCIAL_MEDIA_PASS = config("LOGIN_WITH_SOCIAL_MEDIA_PASS")
 

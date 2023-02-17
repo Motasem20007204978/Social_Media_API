@@ -13,31 +13,12 @@ from rest_framework.response import Response
 
 User = get_user_model()
 
-# Set the API endpoint and your app's consumer key and secret
-TWITTER_API_ENDPOINT = "https://api.twitter.com"
-TWITTER_CLIENT_KEY = settings.TWITTER_CLIENT_KEY
-TWITTER_CLIENT_SECRET = settings.TWITTER_CLIENT_SECRET
-TWITTER_CALLBACK_URI = settings.TWITTER_CALLBACK_URI
-
 
 class GenericLoginView(GenericAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-
-        access_token = self.get_access_token(kwargs.get("auth_data"))
-
-        user_data = self.get_user_data(access_token=access_token)
-
-        # create user if it is not exist
-        user = self.perform_creation(user_data)
-
-        login_data = {
-            "email": user.email,
-            "password": settings.LOGIN_WITH_SOCIAL_MEDIA_PASS,
-        }
-        login_response = self.perform_login(login_data)
-        return Response(data=login_response.json())
+        pass
 
 
 class CallBackView(GenericLoginView):
@@ -65,6 +46,27 @@ class CallBackView(GenericLoginView):
         url = self.request.build_absolute_uri(reverse("signin-user"))
         response = requests.post(url=url, data=credentials)
         return response
+
+    def get(self, request, *args, **kwargs):
+        access_token = self.get_access_token(kwargs.get("auth_data"))
+
+        user_data = self.get_user_data(access_token=access_token)
+
+        # create user if it is not exist
+        user = self.perform_creation(user_data)
+
+        login_data = {
+            "email": user.email,
+            "password": settings.LOGIN_WITH_SOCIAL_MEDIA_PASS,
+        }
+        login_response = self.perform_login(login_data)
+        return Response(data=login_response.json())
+
+
+TWITTER_API_ENDPOINT = "https://api.twitter.com"
+TWITTER_CLIENT_KEY = settings.TWITTER_CLIENT_KEY
+TWITTER_CLIENT_SECRET = settings.TWITTER_CLIENT_SECRET
+TWITTER_CALLBACK_URI = settings.TWITTER_CALLBACK_URI
 
 
 class LoginTwitterView(GenericLoginView):
@@ -205,7 +207,7 @@ class LoginGoogleCallbackAPIView(CallBackView):
 
     def perform_creation(self, user_data):
 
-        user = User.objects.filter(email=user_data["email"])
+        user = User.objects.filter(email=user_data["email"], provider="google")
         if user.exists():
             return user[0]
 
@@ -225,6 +227,78 @@ class LoginGoogleCallbackAPIView(CallBackView):
 
     def get(self, request, *args, **kwargs):
 
+        # Get the authorization code from the query string
+        auth_data = {"code": request.GET.get("code")}
+        kwargs["auth_data"] = auth_data
+        return super().get(request, *args, **kwargs)
+
+
+GITHUB_CLIENT_ID = settings.GITHUB_CLIENT_ID
+GITHUB_CLIENT_SECRET = settings.GITHUB_CLIENT_SECRET
+GITHUB_CALLBACK_URI = settings.GITHUB_CALLBACK_URI
+
+
+class LoginGithubAPIView(GenericLoginView):
+    def get(self, request, *args, **kwargs):
+        url = "https://github.com/login/oauth/authorize"
+        params = {
+            "client_id": GITHUB_CLIENT_ID,
+            "redirect_uri": GITHUB_CALLBACK_URI,
+            "scope": "user:email read:user",
+        }
+        response = requests.get(url, params=params)
+        return redirect(response.url)
+
+
+class LoginGithubCallbackAPIView(CallBackView):
+    def get_access_token(self, auth_data):
+        # Set the request URL and headers for the access token request
+        headers = {"Accept": "application/json"}
+        url = "https://github.com/login/oauth/access_token"
+        payload = {
+            "code": auth_data.get("code"),
+            "client_id": GITHUB_CLIENT_ID,
+            "client_secret": GITHUB_CLIENT_SECRET,
+        }
+        # Send the request to exchange the authorization code for an access token
+        response = super().get_access_token(url=url, headers=headers, payload=payload)
+
+        # Get the access token from the response
+        access_token = response.json()["access_token"]
+        return access_token
+
+    def get_user_data(self, **kwargs):
+
+        # Set the request URL and headers for the user data request
+        url = "https://api.github.com/user"
+        headers = {
+            "Authorization": f"Bearer {kwargs.get('access_token')}",
+        }
+        # Send the request to get the user data
+        json_data = super().get_user_data(url=url, headers=headers)
+        return json_data
+
+    def perform_creation(self, user_data):
+        user = User.objects.filter(email=user_data["email"], provider="github")
+        if user.exists():
+            return user[0]
+        first_name, last_name = (
+            user_data.get("name").split(" ", 1)
+            if user_data.get("name")
+            else ("github", "user")
+        )
+        print(user_data)
+        data = {
+            "provider": "github",
+            "username": user_data.get("login"),
+            "email": user_data.get("email"),
+            "first_name": first_name,
+            "last_name": last_name,
+            "password": settings.LOGIN_WITH_SOCIAL_MEDIA_PASS,
+        }
+        return super().perform_creation(data)
+
+    def get(self, request, *args, **kwargs):
         # Get the authorization code from the query string
         auth_data = {"code": request.GET.get("code")}
         kwargs["auth_data"] = auth_data
