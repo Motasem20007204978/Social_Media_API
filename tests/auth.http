@@ -1,0 +1,65 @@
+@hostname = localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+# @name register
+POST http://{{host}}/api/v1/auth/register HTTP/1.1    
+content-type: {{contentType}}
+
+{
+    "email": "motasem@gmail.com",
+    "username": "motasem_anwar",
+    "first_name": "Motasem",
+    "last_name": "Mobayyed",
+    "password": "motasem",
+    "confirm_password": "motasem"
+}
+
+###
+
+# @name login
+POST http://{{host}}/api/v1/auth/login HTTP/1.1    
+content-type: {{contentType}}
+
+{
+    "email": "motasem@gmail.com",
+    "password": "motasem"
+}
+
+###
+@access = {{login.response.body.$.access}}
+@refresh = {{login.response.body.$.refresh}}
+@token = Bearer {{access}}
+###
+
+# @name refreshToekn
+POST http://{{host}}/api/v1/auth/token/refresh HTTP/1.1    
+content-type: {{contentType}}
+
+{
+    "refresh": "{{refresh}}"
+}
+
+###
+
+# @name changePassword
+POST http://{{host}}/api/v1/auth/password/change HTTP/1.1    
+content-type: {{contentType}}
+Authorization: {{token}}
+
+{
+    "old_password": "motasem_anwar",
+    "new_password": "motasem_anwar"
+}
+
+###
+
+# @name logout
+POST http://{{host}}/api/v1/auth/logout HTTP/1.1    
+content-type: {{contentType}}
+Authorization: {{token}}
+
+{
+    "refresh": "{{refresh}}"
+}

@@ -68,6 +68,7 @@ LOCAL_APPS = [
     "posts_app.apps.PostsAppConfig",
     "notifications_app.apps.NotificationsAppConfig",
     "auth_app.apps.AuthAppConfig",
+    "chats_app.apps.ChatsAppConfig",
 ]
 
 INSTALLED_APPS = LOCAL_APPS + THIRD_PARTY_APPS + DEFAULT_APPS
@@ -206,16 +207,21 @@ SIMPLE_JWT = {
     # "BLACKLIST_AFTER_ROTATION": True,
 }
 
+# redis configurations
+REDIS_URL = config("REDIS_URL")
+
 # celery settings
-CELERY_BROKER_URL = "redis://"
-CELERY_RESULT_BACKEND = "redis://"  # for caching
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL  # for caching
 CELERY_TIMEZONE = "Asia/Gaza"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
 
 # redis (remote dictionary server) for caching
-CHACHE = {
+CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://",
+        "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "MAX_ENTRIES": 2000,
@@ -226,20 +232,19 @@ CHACHE = {
 # to make redis does not interfere with django admin panel and current session
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+CELERY_CACHE_BACKEND = "default"
 
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("localhost", 6379)],
+            "hosts": [config("REDIS_URL")],
             "symmetric_encryption_keys": [SECRET_KEY],
         },
     }
 }
 
-
-WSGI_APPLICATION = "social_media_project.wsgi.application"
 
 ASGI_APPLICATION = "social_media_project.routing.application"
 

@@ -1,8 +1,0 @@
-@hostname = localhost
-@port = 80
-@host = {{hostname}}:{{port}}
-@contentType = application/json
-@createdAt = {{$datetime iso8601}}
-@modifiedAt = {{$processEnv USERNAME}}
-
-

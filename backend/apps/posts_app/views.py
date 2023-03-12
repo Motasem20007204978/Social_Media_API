@@ -100,8 +100,8 @@ class RetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
 
     def check_user_permissions(self, permissions_plus: list = []):
         owner_permissions = self._owner_permissions()
-        permissions = owner_permissions.extend(permissions_plus)
-        if not self.request.user in permissions:
+        owner_permissions.extend(permissions_plus)
+        if not self.request.user in owner_permissions:
             return self.permission_denied(self.request)
 
 
@@ -109,7 +109,7 @@ class RetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
     get=extend_schema(
         description="get home posts or a user's posts",
         operation_id="get post by id",
-        tags=["modify-post"],
+        tags=["post"],
         parameters=[
             OpenApiParameter(
                 name="fields",
@@ -118,10 +118,10 @@ class RetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
         ],
     ),
     patch=extend_schema(
-        operation_id="Patch Post", description="Patch a Post", tags=["modify_post"]
+        operation_id="Patch Post", description="Patch a Post", tags=["post"]
     ),
     delete=extend_schema(
-        operation_id="Delete Post", description="Delete a Post", tags=["modify_post"]
+        operation_id="Delete Post", description="Delete a Post", tags=["post"]
     ),
 )
 class PostDetailView(RetrieveUpdateDestroy):
@@ -259,7 +259,7 @@ class LikeView(ListCreateAPIView, DestroyAPIView):
     get=extend_schema(
         operation_id="get comments",
         description="get comments for a post",
-        tags=["comments-replies"],
+        tags=["comments or replies"],
         parameters=[
             OpenApiParameter(
                 name="comment_id", description="get replies for a comment", type=str
@@ -271,7 +271,7 @@ class LikeView(ListCreateAPIView, DestroyAPIView):
         description="if a comment_id (optional) is obtaied it takes it and make the request as a reply for this comment, \
             then returns response with parent field based on that parent is the obtained comment, \
                 otherwise it takes post id and make the request as a comment without parent field",
-        tags=["comments-replies"],
+        tags=["comments or replies"],
         parameters=[
             OpenApiParameter(
                 name="comment_id",
@@ -303,7 +303,7 @@ class CommentPostView(ListCreateAPIView):
         obj = self.get_object()
         if self.get_comment_id:
             return queryset.filter(parent=obj)
-        return queryset.filter(post=obj)
+        return queryset.filter(post=obj, parent=None)
 
     @method_decorator(
         cache_page(timeout=60 * 60 * 24, key_prefix="get-comments"), name="get_commetns"
@@ -316,17 +316,17 @@ class CommentPostView(ListCreateAPIView):
     get=extend_schema(
         operation_id="Comment Details",
         description="get details for a comment or a reply by id",
-        tags=["modify-comments-replies"],
+        tags=["comment or reply"],
     ),
     patch=extend_schema(
         operation_id="Patch a Comment",
         description="patch comment or reply",
-        tags=["modify-comments-replies"],
+        tags=["comment or reply"],
     ),
     delete=extend_schema(
         operation_id="Delete Comment",
         description="delete comment or reply by id",
-        tags=["modify-comments-replies"],
+        tags=["comment or reply"],
     ),
 )
 class ModifyComment(RetrieveUpdateDestroy):

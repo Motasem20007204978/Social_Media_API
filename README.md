@@ -1,6 +1,8 @@
 
 # Social Media API
 
+## Contains auth, notifications, posts, ursers, chats apps
+
 ### Developed a secure and reliable RESTful API for a social media platform, aimed at connecting people and allowing them to share their experiences and interests with each other
 
 ### Implemented user authentication and authorization using JSON Web Tokens (JWT) and social authentication with OAuth APIs
@@ -20,3 +22,5 @@
 ### Monitored the API using Celery Beat and Flower
 
 ### Technologies used: Django, Django Rest Framework, Python, PostgreSQL, Git, Redis, Celery, Celery Beat, Flower, Docker, Docker Compose, Gunicorn, WebSockets, Nginx, JWT, Django OAuth Toolkit, Python Social Auth, Prometheus, Swagger
+
+# You must add .env file with required environment varialbes and execute it

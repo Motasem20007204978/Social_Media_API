@@ -125,6 +125,7 @@ venv.bak/
 .dmypy.json
 dmypy.json
 *.json 
+!.vscode/settings.json
 
 # Pyre type checker
 .pyre/
@@ -136,4 +137,7 @@ dmypy.json
 */media/*
 
 !*/media/.gitkeep
+!*/media/default-image.jpg
 !*/static/.gitkeep
+
+celerybeat-schedule.*

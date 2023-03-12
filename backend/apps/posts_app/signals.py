@@ -1,5 +1,5 @@
 from django.dispatch import receiver
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import post_delete, post_save, pre_delete
 from .models import Like, Post, Comment
 from .tasks import delete_likes, notifying_post, notifying_like
 from notifications_app.tasks import delete_notifications
@@ -36,11 +36,17 @@ def create_like_notification(created, instance, **kwargs):
 
 
 @receiver(post_delete, sender=Like)
-def delete_like_notification(sender, instance, **kwargs):
+def delete_like_notification(instance, **kwargs):
+    print(instance.id)
     delete_notifications.delay(instance.id, "like_id")
 
 
-@receiver(post_delete, sender=Comment)
-def delete_comment_notification(sender, instance, **kwargs):
-    search_word = "reply_id" if instance.parent else "comment_id"
+# pre_delete is for replies to be deletd before delete comment
+@receiver(pre_delete, sender=Comment)
+def delete_comment_notification(instance, **kwargs):
+    print("parent", instance.parent)
+    if instance.parent:
+        print("dlete reply", instance.id)
+        search_word = "reply_id"
+    search_word = "comment_id"
     delete_notifications.delay(instance.id, search_word)

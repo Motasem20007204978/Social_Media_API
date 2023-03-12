@@ -18,13 +18,13 @@ scrape_configs:
     metrics_path: /api/prometheus/metrics
     static_configs:
       - targets: ['localhost:5000'] #host in docker network
-  - job_name: redis
-    metrics_path: /
-    scheme: https
-    tls_config:
-      insecure_skip_verify: true
-    static_configs:
-      - targets: ["localhost:6379"]
+  # - job_name: redis
+  #   metrics_path: /
+  #   scheme: https
+  #   tls_config:
+  #     insecure_skip_verify: true
+  #   static_configs:
+  #     - targets: ["localhost:6379"]
   - job_name: postgres
     static_configs:
       - targets: ["localhost:9187"]

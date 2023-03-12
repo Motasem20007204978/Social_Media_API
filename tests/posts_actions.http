@@ -1,0 +1,158 @@
+@hostname = localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+# @name login
+POST http://{{host}}/api/v1/auth/login HTTP/1.1    
+content-type: {{contentType}}
+
+{
+    "email": "motasem@gmail.com",
+    "password": "motasem_anwar"
+}
+
+###
+@access = {{login.response.body.$.access}}
+@refresh = {{login.response.body.$.refresh}}
+@token = Bearer {{access}}
+###
+
+# @name createPost
+POST http://{{host}}/api/v1/posts/ HTTP/1.1    
+content-type: {{contentType}}
+Authorization: {{token}}
+
+{
+  "text": "hello world!",
+  "attachments": []
+}
+
+###
+@post_id = {{createPost.response.body.$.id}}
+###
+
+# @name likePost
+POST http://{{host}}/api/v1/posts/likes-objects?post_id={{post_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name postLikes
+GET http://{{host}}/api/v1/posts/likes-objects?post_id={{post_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name unlikePost
+DELETE http://{{host}}/api/v1/posts/likes-objects?post_id={{post_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name commentPost
+POST http://{{host}}/api/v1/posts/{{post_id}}/comments HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+{
+    "text": "good post!"
+}
+
+###
+
+# @name postComments
+GET http://{{host}}/api/v1/posts/{{post_id}}/comments HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+@comment_id = {{commentPost.response.body.$.id}}
+###
+
+# @name modifyComment
+PATCH http://{{host}}/api/v1/posts/{{post_id}}/comments/{{comment_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+{
+    "text": "hello my friend"
+}
+
+###
+
+# @name replyComment
+POST http://{{host}}/api/v1/posts/{{post_id}}/comments?comment_id={{comment_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+{
+    "text": "good comment!"
+}
+
+###
+
+# @name commentReplies
+GET http://{{host}}/api/v1/posts/{{post_id}}/comments?comment_id={{comment_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name likeComment
+POST http://{{host}}/api/v1/posts/likes-objects?comment_id={{comment_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name commentLikes
+GET http://{{host}}/api/v1/posts/likes-objects?comment_id={{comment_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name unlikeComment
+DELETE http://{{host}}/api/v1/posts/likes-objects?comment_id={{comment_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+@reply_id = {{replyComment.response.body.$.id}}
+###
+
+# @name modifyReply
+PATCH http://{{host}}/api/v1/posts/{{post_id}}/comments/{{reply_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+{
+    "text": "hello for comment"
+}
+
+###
+
+# @name likeReply
+POST http://{{host}}/api/v1/posts/likes-objects?reply_id={{reply_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name replyLikes
+GET http://{{host}}/api/v1/posts/likes-objects?reply_id={{reply_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name unlikeComment
+DELETE http://{{host}}/api/v1/posts/likes-objects?reply_id={{reply_id}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###

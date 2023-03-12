@@ -34,11 +34,11 @@ def unfollow(created, instance, **kwargs):
 
 
 @receiver(post_save, sender=Follow)
-def notify_followed_user(sender, created, instance, **kwargs):
+def notify_followed_user(created, instance, **kwargs):
     if created:
         transaction.on_commit(lambda: notifying_following.delay(instance.id))
 
 
 @receiver(post_delete, sender=Follow)
-def delete_follow_notification(sender, instance, **kwargs):
+def delete_follow_notification(instance, **kwargs):
     delete_notifications.delay(instance.id, "following_relation_id")

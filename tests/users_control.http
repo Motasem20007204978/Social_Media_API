@@ -1,0 +1,65 @@
+@hostname = localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+# @name login
+POST http://{{host}}/api/v1/auth/login HTTP/1.1    
+content-type: {{contentType}}
+
+{
+    "email": "motasem@gmail.com",
+    "password": "motasem"
+}
+
+###
+@access = {{login.response.body.$.access}}
+@refresh = {{login.response.body.$.refresh}}
+@token = Bearer {{access}}
+@username = {{login.response.body.$.user.username}}
+###
+
+# @name getUsers
+GET http://{{host}}/api/v1/users?fields=username,email HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+### 
+
+# @name getSpecificUsers
+GET http://{{host}}/api/v1/users?username=mobayyed HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+### 
+@followed_username = motasem_mobayyed
+###
+
+# @name followUser
+POST http://{{host}}/api/v1/following/{{followed_username}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name unfollowUser
+DELETE http://{{host}}/api/v1/following/{{followed_username}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+@blocked_username = motasem_mobayyed
+###
+
+# @name blockUser
+POST http://{{host}}/api/v1/blocking/{{blocked_username}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+
+###
+
+# @name unblockUser
+DELETE http://{{host}}/api/v1/blocking/{{blocked_username}} HTTP/1.1
+content-type: {{contentType}}
+Authorization: {{token}}
+

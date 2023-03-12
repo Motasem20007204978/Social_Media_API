@@ -207,7 +207,7 @@ class Block(Common):
     )
 
     @staticmethod
-    def check_block_reation(source, target):
+    def check_block_relation(source, target):
         block_list = Block.objects.filter(
             Q(from_user=source, to_user=target) | Q(from_user=target, to_user=source)
         )

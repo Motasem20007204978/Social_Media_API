@@ -9,13 +9,9 @@ User = settings.AUTH_USER_MODEL
 
 
 class TextualObject(TimeStampedModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField(max_length=500)
-
-    @cached_property
-    def count_likes(self):
-        return Like.objects.filter(object_id=self.id, content_type="post").count()
 
     class Meta:
         abstract = True
@@ -26,6 +22,10 @@ class Post(TextualObject):
     def count_comments(self):
         return self.comments.count()
 
+    @cached_property
+    def count_likes(self):
+        return Like.objects.filter(object_id=self.id, content_type="post").count()
+
     class Meta:
         db_table = "posts_db"
 
@@ -33,12 +33,21 @@ class Post(TextualObject):
 class Comment(TextualObject):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
     parent = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="replies"
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="replies",
+        db_index=True,
     )
 
     @property
     def count_replies(self):
         return self.replies.count()
+
+    @cached_property
+    def count_likes(self):
+        return Like.objects.filter(object_id=self.id, content_type="comment").count()
 
     class Meta:
         db_table = "comments_db"

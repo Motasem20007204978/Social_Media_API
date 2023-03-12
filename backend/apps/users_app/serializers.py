@@ -9,6 +9,8 @@ from drf_writable_nested.serializers import WritableNestedModelSerializer
 from drf_queryfields.mixins import QueryFieldsMixin
 from rest_framework.exceptions import PermissionDenied
 from auth_app.serializers import PasswordField
+from drf_base64.fields import Base64ImageField
+from django.urls import resolve
 
 
 def repr_data(value):
@@ -91,6 +93,7 @@ class ProfileSerializer(QueryFieldsMixin, WritableNestedModelSerializer):
     followings = RelatedFollowings(many=True, read_only=True)
     blockers = RelatedBlockers(many=True, read_only=True)
     blockings = RelatedBlockings(many=True, read_only=True)
+    profile_pic = Base64ImageField()
 
     class Meta:
         model = User
@@ -134,7 +137,7 @@ class BasicDataSerializer(QueryFieldsMixin, serializers.ModelSerializer):
 
     password = PasswordField()
 
-    again_pass = PasswordField(label="Again password")
+    confirm_password = PasswordField(label="Again password")
 
     class Meta:
         model = User
@@ -146,18 +149,18 @@ class BasicDataSerializer(QueryFieldsMixin, serializers.ModelSerializer):
             "password",
             "full_name",
             "date_joined",
-            "again_pass",
+            "confirm_password",
         ]
         read_only_fields = ["full_name", "date_joined"]
         extra_kwargs = {
             "first_name": {"write_only": True, "min_length": 5},
             "last_name": {"write_only": True, "min_length": 5},
-            "again_pass": {"write_only": True},
+            "confirm_password": {"write_only": True},
         }
 
     def create(self, validated_data):
-        # user model catch again_pass value, although it has not again_pass field
-        validated_data.pop("again_pass")
+        # user model catch confirm_password value, although it has not confirm_password field
+        validated_data.pop("confirm_password")
 
         # for hashing password
         password = validated_data.pop("password")
@@ -167,7 +170,7 @@ class BasicDataSerializer(QueryFieldsMixin, serializers.ModelSerializer):
         return user
 
     def validate(self, attrs):
-        if attrs["password"] == attrs["again_pass"]:
+        if attrs["password"] == attrs["confirm_password"]:
             return super().validate(attrs)
         raise serializers.ValidationError("passwords are not be the same")
 
@@ -215,10 +218,12 @@ class FollowSerializer(serializers.ModelSerializer):
         username = request.resolver_match.kwargs.get("username")
         attrs["username"] = username
         receiver = get_object_or_404(User, username=username)
-        if Block.check_block_relation(sender, receiver):
-            raise PermissionDenied(
-                "you connot follow this user because you have blocked him"
-            )
+        url_name = resolve(request.path_info).url_name
+        if url_name == "following":
+            if Block.check_block_relation(sender, receiver):
+                raise PermissionDenied(
+                    "you connot follow this user because you have blocked him"
+                )
         return attrs
 
 

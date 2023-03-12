@@ -5,13 +5,9 @@ from .models import Notification
 from django.contrib.auth import get_user_model
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-import asyncio
 
 User = get_user_model()
 channel_layer = get_channel_layer()
-# to solve error -> raise RuntimeError('Event loop is closed')
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
 
 
 @shared_task(name="clear_read_notifications")
@@ -28,8 +24,6 @@ def mark_as_read(notif_id):
 
 @shared_task(name="create_notifications")
 def create_notification(sender_id, receiver_id, options: dict = None):
-    if sender_id == receiver_id:
-        return "cannot notify yourself"
     data = {
         "sender": User.objects.get(id=sender_id),
         "receiver": User.objects.get(id=receiver_id),
@@ -42,7 +36,6 @@ def create_notification(sender_id, receiver_id, options: dict = None):
 @shared_task(name="send_notifications")
 def send_client_notification(notif_id):
     notif = Notification.objects.get(id=notif_id)
-
     payload = {
         "type": "send.notification",
         "notification_id": str(notif.id),
@@ -52,6 +45,13 @@ def send_client_notification(notif_id):
     }
     async_to_sync(channel_layer.group_send)(notif.receiver.username, payload)
     return "notification sent successfully"
+
+
+@shared_task(name="load_notifications")
+def load_related_notifications(username):
+    notifs = Notification.objects.filter(receiver__username=username)
+    for notif in notifs:
+        send_client_notification.delay(notif_id=notif.id)
 
 
 @shared_task(name="delete_instance_notification")

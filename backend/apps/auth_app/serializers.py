@@ -28,7 +28,7 @@ class PasswordField(serializers.CharField):
 
 class ResetPasswordSerializer(serializers.Serializer):
     password = PasswordField(label="new password")
-    pass_again = PasswordField(label="password again")
+    confirm_password = PasswordField(label="password again")
 
     def create(self, validated_data):
         password = validated_data.pop("password")
