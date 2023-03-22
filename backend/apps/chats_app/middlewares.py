@@ -30,9 +30,9 @@ class RoomMiddleware(BaseMiddleware):
 
     async def __call__(self, scope, receive, send):
         scope = dict(scope)
-        room_name = self.scope["url_route"]["kwargs"]["room_name"]
+        room_name = scope["path"].split("/")[-1]
         await self.name_exp_validation(room_name)
         await self.check_users(room_name)
-        await self.check_authorization(room_name, self.scope["user"].username)
+        await self.check_authorization(room_name, scope["user"].username)
         await self.create_room(room_name)
         return await super().__call__(scope, receive, send)
