@@ -28,6 +28,6 @@ class WebSocketJWTAuthMiddleware(BaseMiddleware):
             raise Exception("Invalid user")
 
         if scope["path"].__contains__("chat/"):
-            return RoomMiddleware(self.app)
+            return await RoomMiddleware(self.inner)(scope, receive, send)
 
         return await super().__call__(scope, receive, send)

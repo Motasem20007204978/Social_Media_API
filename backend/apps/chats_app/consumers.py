@@ -13,11 +13,11 @@ class ChatConsumer(JsonWebsocketConsumer):
         load_realted_messages.delay(self.room_name)
         super().connect()
 
-    def disconnect(self, **kwargs):
+    def disconnect(self, code):
         async_to_sync(self.channel_layer.group_discard)(
             self.room_name, self.channel_name
         )
-        pass
+        return super().disconnect(code)
 
     def receive_json(self, content, **kwargs):
         if content.get("type") == "create":
