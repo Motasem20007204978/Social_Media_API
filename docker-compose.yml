@@ -52,8 +52,8 @@ services:
   celery:
     container_name: celery
     image: web:django
-    restart: always # restart container automatically if it is stopped manually or fails
-    command: celery -A social_media_project worker -l INFO # get information in terminal
+    restart: always 
+    command: celery -A social_media_project worker -l INFO
     depends_on:
       - database
       - redis
@@ -75,7 +75,7 @@ services:
   flower:
     image: mher/flower
     container_name: flower
-    command: celery flower --url-prefix=flower --auth=motasemalmobayyed@gmail.com --persisten=True 
+    command: celery -A social_media_project flower --url-prefix=flower --auth=motasemalmobayyed@gmail.com --persisten=True 
     # persist our data in flower so that it didn’t go away on every restart of container 
     ports:
       - 5555:5555
